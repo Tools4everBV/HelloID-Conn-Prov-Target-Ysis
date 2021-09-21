@@ -18,7 +18,7 @@
 - [Getting help](Getting-help)
 
 ## Introduction
-The HelloID-Conn-Prov-Target-Ysis connector creates/updates user accounts in Ysis. The SalesForce API is a scim based (http://www.simplecloud.info) API.
+The HelloID-Conn-Prov-Target-Ysis connector creates/updates user accounts in Ysis. The Ysis API is a scim based (http://www.simplecloud.info) API.
 
 
 ## Getting started
