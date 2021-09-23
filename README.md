@@ -3,7 +3,7 @@
 > **WORK IN PROGRESS:** 
 
 <p align="">
-  <img src="Assets/logo.png" width="200" height="200">
+  <img src="Assets/Ysis 256x256.png" width="200" height="200">
 </p>
 
 
