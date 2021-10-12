@@ -1,0 +1,67 @@
+[
+    {
+      "key": "ClientId",
+      "type": "input",
+      "defaultValue": "",
+      "templateOptions": {
+        "label": "ClientID",
+        "description": "The ClientID for the Ysis SCIM API.",
+        "required": true
+      }
+    },
+    {
+      "key": "ClientSecret",
+      "type": "input",
+      "defaultValue": "",
+      "templateOptions": {
+        "type": "password",
+        "label": "ClientSecret",
+        "description": "The ClientSecret for the Ysis SCIM API.",
+        "required": true
+      }
+    },
+    {
+      "key": "BaseUrl",
+      "type": "input",
+      "defaultValue": "",
+      "templateOptions": {
+        "label": "BaseUrl",
+        "description": "The URL to the Ysis environment. [https://tools4ever.acceptatie1.ysis.nl/um/api]",
+        "placeholder": "https://mycompany.acceptatie.ysis.nl/um/api",
+        "required": true
+      }
+    },
+    {
+      "key": "AuthenticationUrl",
+      "type": "input",
+      "defaultValue": "",
+      "templateOptions": {
+        "label": "AuthenticationUrl",
+        "description": "The URI to retrieve the oAuth token. Like [https://tools4ever.acceptatie1.ysis.nl/cas/oauth/token]",
+        "placeholder": "https://mycompany.acceptatie.ysis.nl/cas/oauth/token",
+        "required": true
+      }
+    },
+    {
+      "key": "To",
+      "type": "input",
+      "defaultValue": "",
+      "templateOptions": {
+        "label": "To",
+        "description": "The 'To' Email Address of the Administrator. Who needs to be informed when a discipline update takes place.",
+        "placeholder": "",
+        "required": true
+      }
+    },
+    {
+      "key": "SmtpServerAddress",
+      "type": "input",
+      "defaultValue": "",
+      "templateOptions": {
+        "label": "SmtpServerAddress",
+        "description": "The URL of the Exchange Server",
+        "placeholder": "<URL-Exchange-Server>",
+        "required": true
+      }
+    }
+  ]
