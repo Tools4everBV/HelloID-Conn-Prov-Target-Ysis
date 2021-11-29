@@ -104,7 +104,7 @@ function Invoke-YsisRestMethod {
 
         [Parameter(Mandatory)]
         [ValidateNotNullOrEmpty()]
-        [Microsoft.PowerShell.Commands.WebRequestMethod]
+        [string]
         $Method
 
     )
