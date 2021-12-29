@@ -24,6 +24,7 @@ When a person requires a different or extra discipline. There must be created a 
 ## Getting started
 
 ### Prerequisites
+ - The "IAM-ID" field of Ysis must be filled with employeeNumber before implementing this connector.
  - The URLs and the OAuth Credentials. Which are documented in the connection settings.
  - A Mail server which accessible by HelloId or the Agent.
  - Mapping Between function and discipline
