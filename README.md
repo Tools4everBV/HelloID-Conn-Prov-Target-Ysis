@@ -2,7 +2,7 @@
 
 | :warning: Warning |
 |:---------------------------|
-| Note that this is connector is **not ready** to use in your production environment.       |
+| Note that this connector is not yet implemented. Contact our support for further assistance.       |
 
 
 | :information_source: Information |
