@@ -86,7 +86,7 @@ function Get-GenericScimOAuthToken {
             Body   = $body
         }
         Invoke-RestMethod @splatRestMethodParameters
-        Write-Verbose 'retrived accessToken'
+        Write-Verbose 'retrieved accessToken'
     } catch {
         $PSCmdlet.ThrowTerminatingError($PSItem)
     }
@@ -169,15 +169,14 @@ function New-AuthorizationHeaders {
         Write-Verbose 'Adding Authorization headers'
         $headers = New-Object 'System.Collections.Generic.Dictionary[[String], [String]]'
         $headers.Add('Authorization', "Bearer $($AccessToken)")
-        $headers.Add('Accept', 'application / json')
-        $headers.Add('Content-Type', 'application / json')
+        $headers.Add('Accept', 'application/json')
+        $headers.Add('Content-Type', 'application/json')
         Write-Output $headers
     } catch {
         $PSCmdlet.ThrowTerminatingError($_)
     }
 }
 #endregion Functions
-
 try {
     $accessToken = Get-GenericScimOAuthToken -ClientID $config.ClientID -ClientSecret $config.ClientSecret -AuthenticationUrl $config.AuthenticationUrl
     $headers = New-AuthorizationHeaders -AccessToken $accessToken.access_token
