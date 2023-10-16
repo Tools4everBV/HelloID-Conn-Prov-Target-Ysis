@@ -1,0 +1,64 @@
+[
+    {
+      "key": "ClientId",
+      "type": "input",
+      "defaultValue": "",
+      "templateOptions": {
+        "label": "ClientId",
+        "description": "The ClientId to connect to the Ysis API",
+        "required": true
+      }
+    },
+    {
+      "key": "ClientSecret",
+      "type": "input",
+      "defaultValue": "",
+      "templateOptions": {
+        "type": "password",
+        "label": "ClientSecret",
+        "description": "The ClientSecret to connect to the Ysis API",
+        "required": true
+      }
+    },
+    {
+      "key": "BaseUrl",
+      "type": "input",
+      "defaultValue": "",
+      "templateOptions": {
+        "PlaceHolder": "https://your-organization.ysis.nl",
+        "label": "BaseUrl",
+        "description": "The URL to the Ysis API.",
+        "required": true
+      }
+    },
+    {
+      "key": "MappingFile",
+      "type": "input",
+      "defaultValue": "",
+      "templateOptions": {
+        "label": "MappingFile",
+        "description": "The mapping between function and profession",
+        "required": true
+      }
+    },
+    {
+      "key": "UpdatePersonOnCorrelate",
+      "type": "checkbox",
+      "defaultValue": false,
+      "templateOptions": {
+        "label": "Update account during correlating",
+        "required": false,
+        "description": "This will update the account in the target application during correlation"
+      }
+    },
+    {
+      "key": "IsDebug",
+      "type": "checkbox",
+      "defaultValue": true,
+      "templateOptions": {
+        "label": "Toggle debug logging",
+        "description": "When toggled, debug logging will be displayed",
+        "required": false
+      }
+    }
+  ]
