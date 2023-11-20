@@ -1,7 +1,7 @@
 ########################################
 # HelloID-Conn-Prov-Target-YsisV2-Enable
 #
-# Version: 1.0.0
+# Version: 1.1.0
 ########################################
 # Initialize default values
 $config = $configuration | ConvertFrom-Json
@@ -33,19 +33,21 @@ function Resolve-YsisV2Error {
     }
 
     try {
-        if ($null -eq $ErrorObject.ErrorDetails){
+        if ($null -eq $ErrorObject.ErrorDetails) {
             $streamReaderResponse = [System.IO.StreamReader]::new($ErrorObject.Exception.Response.GetResponseStream()).ReadToEnd()
-            if($null -ne $streamReaderResponse){
+            if ($null -ne $streamReaderResponse) {
                 $convertedError = $streamReaderResponse | ConvertFrom-Json
                 $httpErrorObj.ErrorDetails = "Message: $($convertedError.error), description: $($convertedError.error_description)"
-                $httpErrorObj.FriendlyMessage =  "Message: $($convertedError.error), description: $($convertedError.error_description)"
+                $httpErrorObj.FriendlyMessage = "Message: $($convertedError.error), description: $($convertedError.error_description)"
             }
-        } else {
+        }
+        else {
             $errorResponse = $ErrorObject.ErrorDetails | ConvertFrom-Json
             $httpErrorObj.ErrorDetails = "Message: $($errorResponse.detail), type: $($errorResponse.scimType)"
             $httpErrorObj.FriendlyMessage = "$($errorResponse.detail), type: $($errorResponse.scimType)"
         }
-    } catch {
+    }
+    catch {
         $httpErrorObj.FriendlyMessage = "Received an unexpected response. The JSON could not be converted, error: [$($_.Exception.Message)]. Original error from web service: [$($ErrorObject.Exception.Message)]"
     }
     Write-Output $httpErrorObj
@@ -121,14 +123,16 @@ try {
                 IsError = $false
             })
     }
-} catch {
+}
+catch {
     $success = $false
     $ex = $PSItem
     if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
         $errorObj = Resolve-YsisV2Error -ErrorObject $ex
         $auditMessage = "Could not enable YsisV2 account. Error: $($errorObj.FriendlyMessage)"
         Write-Verbose "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
-    } else {
+    }
+    else {
         $auditMessage = "Could not enable YsisV2 account. Error: $($ex.Exception.Message)"
         Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
     }
@@ -136,8 +140,9 @@ try {
             Message = $auditMessage
             IsError = $true
         })
-# End
-} finally {
+    # End
+}
+finally {
     $result = [PSCustomObject]@{
         Success   = $success
         Auditlogs = $auditLogs

@@ -1,7 +1,7 @@
 ########################################
 # HelloID-Conn-Prov-Target-YsisV2-Update
 #
-# Version: 1.0.0
+# Version: 1.1.0
 ########################################
 # Initialize default values
 $config = $configuration | ConvertFrom-Json
@@ -12,53 +12,54 @@ $auditLogs = [System.Collections.Generic.List[PSCustomObject]]::new()
 
 # Smtp configuration
 $smtpServerAddress = '127.0.01'
-$to                = 'JohnDoe@enyoi.local'
+$to = 'JohnDoe@enyoi.local'
 
 # Account mapping
 $account = [PSCustomObject]@{
-    id = $($aRef.Id)
-    schemas = @('urn:ietf:params:scim:schemas:core:2.0:User', 'urn:ietf:params:scim:schemas:extension:ysis:2.0:User','urn:ietf:params:scim:schemas:extension:enterprise:2.0:User')
-    userName = $p.ExternalId
-    name = [PSCustomObject]@{
+    id                                                           = $($aRef.Id)
+    schemas                                                      = @('urn:ietf:params:scim:schemas:core:2.0:User', 'urn:ietf:params:scim:schemas:extension:ysis:2.0:User', 'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User')
+    userName                                                     = $p.ExternalId
+    name                                                         = [PSCustomObject]@{
         givenName  = $p.Name.NickName
         familyName = switch ($p.Name.Convention) {
-            'B'  { $p.Name.FamilyName }
+            'B' { $p.Name.FamilyName }
             'PB' { $p.Name.FamilyNamePartner + ' - ' + $p.Name.FamilyNamePrefix + ' ' + $p.Name.FamilyName }
-            'P'  { $p.Name.FamilyNamePartner }
+            'P' { $p.Name.FamilyNamePartner }
             default { $p.Name.FamilyName + ' - ' + $p.Name.FamilyNamePartnerPrefix + ' ' + $p.Name.FamilyNamePartner }
         }
-        infix = switch ($p.Name.Convention) {
-            'B'  { $p.Name.FamilyNamePrefix }
-            default { $p.Name.FamilyNamePartnerPrefix }
+        infix      = switch ($p.Name.Convention) {
+            'P' { $p.Name.FamilyNamePartnerPrefix }
+            'PB' { $p.Name.FamilyNamePartnerPrefix }
+            default { $p.Name.FamilyNamePrefix }
         }
     }
-    active = $true
-    gender = switch ($p.Details.Gender) {
+    active                                                       = $true
+    gender                                                       = switch ($p.Details.Gender) {
         "V" { "FEMALE" }
         "M" { "MALE" }
         default { "UNKNOWN" }
     }
-    emails = @(
+    emails                                                       = @(
         [PSCustomObject]@{
             value   = $p.accounts.MicrosoftActiveDirectory.mail
             type    = 'work'
             primary = $true
         }
     )
-    roles = @()
-    entitlements = @()
-    phoneNumbers = @(
+    roles                                                        = @()
+    entitlements                                                 = @()
+    phoneNumbers                                                 = @(
         [PSCustomObject]@{
             value = $p.Contact.Business.Phone.Fixed
             type  = 'work'
         }
     )
-    'urn:ietf:params:scim:schemas:extension:ysis:2.0:User' = [PSCustomObject][ordered]@{
+    'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'       = [PSCustomObject][ordered]@{
         # Initials must be unique within Ysis
         ysisInitials = ''
         discipline   = ''
         agbCode      = $null
-        initials     = $p.Name.Initials
+        initials     = $p.Name.Initials ##immutable
         bigNumber    = $null
         position     = $p.PrimaryContract.Title.Name
         modules      = @()
@@ -78,20 +79,6 @@ switch ($($config.IsDebug)) {
 }
 
 #region functions
-function Set-YsisV2Initials {
-    param (
-        [object]
-        $PersonObject
-    )
-
-    $initials = $PersonObject.ExternalId + '-' + ($PersonObject.Name.Initials -replace '\.')
-    if ($initials.Length -gt 10) {
-        $initials = $initials.Substring(0, 10)
-    }
-
-    Write-Output $initials
-}
-
 function Resolve-YsisV2Error {
     param (
         [object]
@@ -105,19 +92,21 @@ function Resolve-YsisV2Error {
     }
 
     try {
-        if ($null -eq $ErrorObject.ErrorDetails){
+        if ($null -eq $ErrorObject.ErrorDetails) {
             $streamReaderResponse = [System.IO.StreamReader]::new($ErrorObject.Exception.Response.GetResponseStream()).ReadToEnd()
-            if($null -ne $streamReaderResponse){
+            if ($null -ne $streamReaderResponse) {
                 $convertedError = $streamReaderResponse | ConvertFrom-Json
                 $httpErrorObj.ErrorDetails = "Message: $($convertedError.error), description: $($convertedError.error_description)"
-                $httpErrorObj.FriendlyMessage =  "Message: $($convertedError.error), description: $($convertedError.error_description)"
+                $httpErrorObj.FriendlyMessage = "Message: $($convertedError.error), description: $($convertedError.error_description)"
             }
-        } else {
+        }
+        else {
             $errorResponse = $ErrorObject.ErrorDetails | ConvertFrom-Json
             $httpErrorObj.ErrorDetails = "Message: $($errorResponse.detail), type: $($errorResponse.scimType)"
             $httpErrorObj.FriendlyMessage = "$($errorResponse.detail), type: $($errorResponse.scimType)"
         }
-    } catch {
+    }
+    catch {
         $httpErrorObj.FriendlyMessage = "Received an unexpected response. The JSON could not be converted, error: [$($_.Exception.Message)]. Original error from web service: [$($ErrorObject.Exception.Message)]"
     }
     Write-Output $httpErrorObj
@@ -169,10 +158,26 @@ try {
         throw
     }
 
-    # Verify if the account must be updated
-    # Add the unique YsisInitials to the account object
-    $account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials = Set-YsisV2Initials -Person $p
+    # Set Ysis-Initials & Initials to existing
+    # Both are mandatory but immutable
+    $account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials
+    $account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.initials = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.initials
 
+    # Set Gender to existing if unknown in person
+    if ([String]::IsNullOrEmpty($p.Details.Gender)) {
+        $account.Gender = $currentAccount.Gender
+    }
+
+    # Set Phonenumbers to existing
+    $account.phoneNumbers[0].value = ($currentAccount.phoneNumbers | Where-Object type -eq 'work').value
+    $account.phoneNumbers[1].value = ($currentAccount.phoneNumbers | Where-Object type -eq 'mobile').value
+
+    # Set Roles to existing
+    $account.roles = $currentAccount.roles
+    
+    # Set Modules to existing
+    $account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.modules = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.modules
+    
     # Import mapping
     $mapping = Import-Csv $config.MappingFile -Delimiter ";"
     $mappedObject = $mapping | Where-Object { $_.Id -eq $p.PrimaryContract.Title.ExternalId }
@@ -182,20 +187,23 @@ try {
     if ($aRef.Discipline -ne $($account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline)) {
         $action = 'Update-Discipline'
         $dryRunMessage = "The account discipline has changed from: [$($currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline)] to: [$($account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline)]."
-    } else {
+    }
+    else {
         # Compare objects
         $splatCompareProperties = @{
             ReferenceObject  = @($currentAccount.PSObject.Properties)
             DifferenceObject = @($account.PSObject.Properties)
         }
-        $propertiesChanged = (Compare-Object @splatCompareProperties -PassThru).Where({$_.SideIndicator -eq '=>'})
+        $propertiesChanged = (Compare-Object @splatCompareProperties -PassThru).Where({ $_.SideIndicator -eq '=>' })
         if ($propertiesChanged) {
             $action = 'Update'
             $dryRunMessage = "Account property(s) required to update: [$($propertiesChanged.name -join ",")]"
-        } elseif (-not $propertiesChanged) {
+        }
+        elseif (-not $propertiesChanged) {
             $action = 'NoChanges'
             $dryRunMessage = 'No changes will be made to the account during enforcement'
-        } elseif ($null -eq $currentAccount) {
+        }
+        elseif ($null -eq $currentAccount) {
             $action = 'NotFound'
             $dryRunMessage = "YsisV2 account for: [$($p.DisplayName)] not found. Possibly deleted"
         }
@@ -223,9 +231,9 @@ try {
                 $null = Invoke-RestMethod @splatUpdateUserParams -Verbose:$false
                 $success = $true
                 $auditLogs.Add([PSCustomObject]@{
-                    Message = 'Update account was successful'
-                    IsError = $false
-                })
+                        Message = 'Update account was successful'
+                        IsError = $false
+                    })
                 break
             }
 
@@ -256,39 +264,41 @@ try {
                 Send-MailMessage @splatMailParams -ErrorAction Stop
                 $success = $true
                 $auditLogs.Add([PSCustomObject]@{
-                    Message = "The discipline for person: [$($p.DisplayName)] needs to be updated to: [$discipline]. An email is sent to: [$($splatMailParams.To)]"
-                    IsError = $false
-                })
+                        Message = "The discipline for person: [$($p.DisplayName)] needs to be updated to: [$discipline]. An email is sent to: [$($splatMailParams.To)]"
+                        IsError = $false
+                    })
             }
 
             'NoChanges' {
                 Write-Verbose "No changes to YsisV2 account with accountReference: [$aRef]"
                 $success = $true
                 $auditLogs.Add([PSCustomObject]@{
-                    Message = 'No changes will be made to the account during enforcement'
-                    IsError = $false
-                })
+                        Message = 'No changes will be made to the account during enforcement'
+                        IsError = $false
+                    })
                 break
             }
 
             'NotFound' {
                 $success = $false
                 $auditLogs.Add([PSCustomObject]@{
-                    Message = "YsisV2 account for: [$($p.DisplayName)] not found. Possibly deleted"
-                    IsError = $true
-                })
+                        Message = "YsisV2 account for: [$($p.DisplayName)] not found. Possibly deleted"
+                        IsError = $true
+                    })
                 break
             }
         }
     }
-} catch {
+}
+catch {
     $success = $false
     $ex = $PSItem
     if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
         $errorObj = Resolve-YsisV2Error -ErrorObject $ex
         $auditMessage = "Could not update YsisV2 account. Error: $($errorObj.FriendlyMessage)"
         Write-Verbose "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
-    } else {
+    }
+    else {
         $auditMessage = "Could not update YsisV2 account. Error: $($ex.Exception.Message)"
         Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
     }
@@ -296,8 +306,9 @@ try {
             Message = $auditMessage
             IsError = $true
         })
-# End
-} finally {
+    # End
+}
+finally {
     $result = [PSCustomObject]@{
         Success   = $success
         Account   = $account

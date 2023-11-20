@@ -1,7 +1,7 @@
 ########################################
 # HelloID-Conn-Prov-Target-YsisV2-Delete
 #
-# Version: 1.0.0
+# Version: 1.1.0
 ########################################
 # Initialize default values
 $config = $configuration | ConvertFrom-Json
@@ -33,19 +33,21 @@ function Resolve-YsisV2Error {
     }
 
     try {
-        if ($null -eq $ErrorObject.ErrorDetails){
+        if ($null -eq $ErrorObject.ErrorDetails) {
             $streamReaderResponse = [System.IO.StreamReader]::new($ErrorObject.Exception.Response.GetResponseStream()).ReadToEnd()
-            if($null -ne $streamReaderResponse){
+            if ($null -ne $streamReaderResponse) {
                 $convertedError = $streamReaderResponse | ConvertFrom-Json
                 $httpErrorObj.ErrorDetails = "Message: $($convertedError.error), description: $($convertedError.error_description)"
-                $httpErrorObj.FriendlyMessage =  "Message: $($convertedError.error), description: $($convertedError.error_description)"
+                $httpErrorObj.FriendlyMessage = "Message: $($convertedError.error), description: $($convertedError.error_description)"
             }
-        } else {
+        }
+        else {
             $errorResponse = $ErrorObject.ErrorDetails | ConvertFrom-Json
             $httpErrorObj.ErrorDetails = "Message: $($errorResponse.detail), type: $($errorResponse.scimType)"
             $httpErrorObj.FriendlyMessage = "$($errorResponse.detail), type: $($errorResponse.scimType)"
         }
-    } catch {
+    }
+    catch {
         $httpErrorObj.FriendlyMessage = "Received an unexpected response. The JSON could not be converted, error: [$($_.Exception.Message)]. Original error from web service: [$($ErrorObject.Exception.Message)]"
     }
     Write-Output $httpErrorObj
@@ -86,7 +88,8 @@ try {
             ContentType = 'application/json'
         }
         $responseUser = Invoke-RestMethod @splatParams -Verbose:$false
-    } catch {
+    }
+    catch {
         if ($_.Exception.Response.StatusCode -eq 404) {
             $responseUser = $null
         }
@@ -95,10 +98,11 @@ try {
         }
     }
 
-    if ($responseUser){
+    if ($responseUser) {
         $action = 'Found'
         $dryRunMessage = "Delete YsisV2 account for: [$($p.DisplayName)] will be executed during enforcement"
-    } elseif($null -eq $responseUser) {
+    }
+    elseif ($null -eq $responseUser) {
         $action = 'NotFound'
         $dryRunMessage = "YsisV2 account for: [$($p.DisplayName)] not found. Possibly already deleted. Skipping action"
     }
@@ -111,42 +115,44 @@ try {
 
     # Process
     if (-not($dryRun -eq $true)) {
-        switch ($action){
-            'Found'{
+        switch ($action) {
+            'Found' {
                 Write-Verbose "Deleting YsisV2 account with accountReference: [$($aRef.id)]"
                 $splatParams = @{
-                    Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($aRef.id)"
-                    Headers     = $headers
-                    Method      = 'DELETE'
+                    Uri     = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($aRef.id)"
+                    Headers = $headers
+                    Method  = 'DELETE'
                 }
                 $null = Invoke-RestMethod @splatParams -Verbose:$false
                 $success = $true
                 $auditLogs.Add([PSCustomObject]@{
-                    Message = "Delete account for: [$($p.DisplayName)] was successful."
-                    IsError = $false
-                })
+                        Message = "Delete account for: [$($p.DisplayName)] was successful."
+                        IsError = $false
+                    })
                 break
             }
 
-            'NotFound'{
+            'NotFound' {
                 $auditLogs.Add([PSCustomObject]@{
-                    Message = "YsisV2 account for: [$($p.DisplayName)] not found. Possibly already deleted. Skipping action"
-                    IsError = $false
-                })
+                        Message = "YsisV2 account for: [$($p.DisplayName)] not found. Possibly already deleted. Skipping action"
+                        IsError = $false
+                    })
                 break
             }
         }
 
         $success = $true
     }
-} catch {
+}
+catch {
     $success = $false
     $ex = $PSItem
     if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
         $errorObj = Resolve-YsisV2Error -ErrorObject $ex
         $auditMessage = "Could not delete YsisV2 account. Error: $($errorObj.FriendlyMessage)"
         Write-Verbose "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
-    } else {
+    }
+    else {
         $auditMessage = "Could not delete YsisV2 account. Error: $($ex.Exception.Message)"
         Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
     }
@@ -154,8 +160,9 @@ try {
             Message = $auditMessage
             IsError = $true
         })
-# End
-} finally {
+    # End
+}
+finally {
     $result = [PSCustomObject]@{
         Success   = $success
         Auditlogs = $auditLogs
