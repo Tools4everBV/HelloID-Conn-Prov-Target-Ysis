@@ -25,7 +25,7 @@
       "type": "input",
       "defaultValue": "",
       "templateOptions": {
-        "PlaceHolder": "https://your-organization.ysis.nl",
+        "placeHolder": "https://your-organization.ysis.nl",
         "label": "BaseUrl",
         "description": "The URL to the Ysis API.",
         "required": true
@@ -38,6 +38,27 @@
       "templateOptions": {
         "label": "MappingFile",
         "description": "The mapping between function and profession",
+        "required": true
+      }
+    },
+    {
+      "key": "MailServer",
+      "type": "input",
+      "defaultValue": "",
+      "templateOptions": {
+        "placeHolder":"127.0.0.1",
+        "label": "Mail server",
+        "description": "The serveraddress for sending smtp.",
+        "required": true
+      }
+    },
+    {
+      "key": "MailSendTo",
+      "type": "input",
+      "defaultValue": "",
+      "templateOptions": {
+        "label": "Mail to",
+        "description": "The mailaddress where a discipline update notification is send to.",
         "required": true
       }
     },

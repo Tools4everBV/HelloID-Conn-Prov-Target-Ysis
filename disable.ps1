@@ -1,15 +1,8 @@
 #########################################
 # HelloID-Conn-Prov-Target-YsisV2-Disable
 #
-# Version: 1.0.0
+# Version: 1.1.0
 #########################################
-# Initialize default values
-$config = $configuration | ConvertFrom-Json
-$p = $person | ConvertFrom-Json
-$aRef = $AccountReference | ConvertFrom-Json
-$success = $false
-$auditLogs = [System.Collections.Generic.List[PSCustomObject]]::new()
-
 # Enable TLS1.2
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
 
@@ -18,6 +11,13 @@ switch ($($config.IsDebug)) {
     $true { $VerbosePreference = 'Continue' }
     $false { $VerbosePreference = 'SilentlyContinue' }
 }
+
+# Initialize default values
+$config = $configuration | ConvertFrom-Json
+$p = $person | ConvertFrom-Json
+$aRef = $AccountReference | ConvertFrom-Json
+$success = $false
+$auditLogs = [System.Collections.Generic.List[PSCustomObject]]::new()
 
 #region functions
 function Resolve-YsisV2Error {

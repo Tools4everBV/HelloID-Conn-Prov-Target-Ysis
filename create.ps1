@@ -1,70 +1,10 @@
 ########################################
 # HelloID-Conn-Prov-Target-YsisV2-Create
 #
-# Version: 1.0.0
+# Version: 1.1.0
 ########################################
-# Initialize default values
-$config = $configuration | ConvertFrom-Json
-$p = $person | ConvertFrom-Json
-$success = $false
-$auditLogs = [System.Collections.Generic.List[PSCustomObject]]::new()
-
-# Account mapping
-$account = [PSCustomObject]@{
-    schemas = @('urn:ietf:params:scim:schemas:core:2.0:User', 'urn:ietf:params:scim:schemas:extension:ysis:2.0:User','urn:ietf:params:scim:schemas:extension:enterprise:2.0:User')
-    userName = $p.ExternalId
-    name = [PSCustomObject]@{
-        givenName  = $p.Name.NickName
-        familyName = switch ($p.Name.Convention) {
-            'B'  { $p.Name.FamilyName }
-            'PB' { $p.Name.FamilyNamePartner + ' - ' + $p.Name.FamilyNamePrefix + ' ' + $p.Name.FamilyName }
-            'P'  { $p.Name.FamilyNamePartner }
-            default { $p.Name.FamilyName + ' - ' + $p.Name.FamilyNamePartnerPrefix + ' ' + $p.Name.FamilyNamePartner }
-        }
-        infix = switch ($p.Name.Convention) {
-            'B'  { $p.Name.FamilyNamePrefix }
-            default { $p.Name.FamilyNamePartnerPrefix }
-        }
-    }
-    active = $true
-    gender = switch ($p.Details.Gender) {
-        "V" { "FEMALE" }
-        "M" { "MALE" }
-        default { "UNKNOWN" }
-    }
-    emails = @(
-        [PSCustomObject]@{
-            value   = $p.accounts.MicrosoftActiveDirectory.mail
-            type    = 'work'
-            primary = $true
-        }
-    )
-    roles = @()
-    entitlements = @()
-    phoneNumbers = @(
-        [PSCustomObject]@{
-            value = $p.Contact.Business.Phone.Fixed
-            type  = 'work'
-        }
-    )
-    'urn:ietf:params:scim:schemas:extension:ysis:2.0:User' = [PSCustomObject]@{
-        ysisInitials = ''
-        discipline   = ''
-        agbCode      = $null
-        initials     = $p.Name.Initials
-        bigNumber    = $null
-        position     = $p.PrimaryContract.Title.Name
-        modules      = @()
-    }
-    "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User" = [PSCustomObject]@{
-        employeeNumber = $p.ExternalId
-    }
-    userType = ''
-    password = ''
-}
-
-# Enable TLS1.2
-[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
+# Set TLS to accept TLS, TLS 1.1 and TLS 1.2
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls12
 
 # Set debug logging
 switch ($($config.IsDebug)) {
@@ -72,7 +12,18 @@ switch ($($config.IsDebug)) {
     $false { $VerbosePreference = 'SilentlyContinue' }
 }
 
+# Initialize default values
+$config = $configuration | ConvertFrom-Json
+$p = $person | ConvertFrom-Json
+$success = $false
+$auditLogs = [System.Collections.Generic.List[PSCustomObject]]::new()
+
 #region functions
+function Remove-StringLatinCharacters {
+    PARAM ([string]$String)
+    [Text.Encoding]::ASCII.GetString([Text.Encoding]::GetEncoding("Cyrillic").GetBytes($String))
+}
+
 function Set-YsisV2Password {
     param (
         [int]
@@ -87,17 +38,32 @@ function Set-YsisV2Password {
 }
 
 function Set-YsisV2Initials {
-    param (
-        [object]
-        $PersonObject
+    [cmdletbinding()]
+    Param (
+        [object]$PersonObject,
+        [int]$Iteration
     )
-
-    $initials = $PersonObject.ExternalId + '-' + ($PersonObject.Name.Initials -replace '\.')
-    if ($initials.Length -gt 10) {
-        $initials = $initials.Substring(0, 10)
+    Process {
+        try {
+            switch ($Iteration) {
+                0 {
+                    $tempInitials = $PersonObject.Name.NickName.PadRight(2, 'X').Substring(0, 2) + $PersonObject.Name.FamilyName.PadRight(3, 'X').Substring(0, 3)
+                    break 
+                }
+                default {        
+                    $tempInitials = $PersonObject.Name.NickName.PadRight(2, 'X').Substring(0, 2) + $PersonObject.Name.FamilyName.PadRight(3, 'X').Substring(0, 3)
+                    $suffix = "$($Iteration+1)"
+                }
+            }
+            $tempInitials = Remove-StringLatinCharacters $tempInitials          
+            $result = ("{0}{1}" -f $tempInitials, $suffix)
+            $result = $result.ToUpper()            
+            Write-Output $result
+        }
+        catch {
+            throw("An error was found in the ysisinitials convention algorithm: $($_.Exception.Message): $($_.ScriptStackTrace)")
+        } 
     }
-
-    Write-Output $initials
 }
 
 function Resolve-YsisV2Error {
@@ -113,24 +79,88 @@ function Resolve-YsisV2Error {
     }
 
     try {
-        if ($null -eq $ErrorObject.ErrorDetails){
+        if ($null -eq $ErrorObject.ErrorDetails) {
             $streamReaderResponse = [System.IO.StreamReader]::new($ErrorObject.Exception.Response.GetResponseStream()).ReadToEnd()
-            if($null -ne $streamReaderResponse){
+            if ($null -ne $streamReaderResponse) {
                 $convertedError = $streamReaderResponse | ConvertFrom-Json
                 $httpErrorObj.ErrorDetails = "Message: $($convertedError.error), description: $($convertedError.error_description)"
-                $httpErrorObj.FriendlyMessage =  "Message: $($convertedError.error), description: $($convertedError.error_description)"
+                $httpErrorObj.FriendlyMessage = "Message: $($convertedError.error), description: $($convertedError.error_description)"
             }
-        } else {
+        }
+        else {
             $errorResponse = $ErrorObject.ErrorDetails | ConvertFrom-Json
             $httpErrorObj.ErrorDetails = "Message: $($errorResponse.detail), type: $($errorResponse.scimType)"
             $httpErrorObj.FriendlyMessage = "$($errorResponse.detail), type: $($errorResponse.scimType)"
         }
-    } catch {
+    }
+    catch {
         $httpErrorObj.FriendlyMessage = "Received an unexpected response. The JSON could not be converted, error: [$($_.Exception.Message)]. Original error from web service: [$($ErrorObject.Exception.Message)]"
     }
     Write-Output $httpErrorObj
 }
 #endregion
+
+# Account mapping
+$account = [PSCustomObject]@{
+    schemas                                                      = @('urn:ietf:params:scim:schemas:core:2.0:User', 'urn:ietf:params:scim:schemas:extension:ysis:2.0:User', 'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User')
+    userName                                                     = $p.ExternalId
+    name                                                         = [PSCustomObject]@{
+        givenName  = $p.Name.NickName
+        familyName = switch ($p.Name.Convention) {
+            'B' { $p.Name.FamilyName }
+            'PB' { $p.Name.FamilyNamePartner + ' - ' + $p.Name.FamilyNamePrefix + ' ' + $p.Name.FamilyName }
+            'P' { $p.Name.FamilyNamePartner }
+            default { $p.Name.FamilyName + ' - ' + $p.Name.FamilyNamePartnerPrefix + ' ' + $p.Name.FamilyNamePartner }
+        }
+        infix      = switch ($p.Name.Convention) {
+            'B' { $p.Name.FamilyNamePrefix }
+            default { $p.Name.FamilyNamePartnerPrefix }
+        }
+    }    
+    gender                                                       = switch ($p.Details.Gender) {
+        "V" { "FEMALE" }
+        "M" { "MALE" }
+        default { "UNKNOWN" }
+    }
+    emails                                                       = @(
+        [PSCustomObject]@{
+            value   = $p.accounts.MicrosoftActiveDirectory.mail
+            type    = 'work'
+            primary = $true
+        }
+    )
+    active                                                       = $false
+    roles                                                        = @(
+        [PSCustomObject]@{
+            value       = ''
+            displayName = ''
+        }
+    )
+    entitlements                                                 = @()
+    phoneNumbers                                                 = @(
+        [PSCustomObject]@{
+            value = $p.Contact.Business.Phone.Fixed
+            type  = 'work'
+        },
+        [PSCustomObject]@{
+            value = $p.Contact.Business.Phone.Mobile
+            type  = 'mobile'
+        }
+    )
+    'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'       = [PSCustomObject]@{
+        ysisInitials = ''
+        discipline   = ''
+        agbCode      = $null
+        initials     = Remove-StringLatinCharacters $($p.Name.Initials)
+        bigNumber    = $null
+        position     = $($p.PrimaryContract.Title.Name)
+        modules      = @('YSIS_CORE')
+    }
+    "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User" = [PSCustomObject]@{
+        employeeNumber = $p.ExternalId
+    }
+    password                                                     = ''
+}
 
 # Begin
 try {
@@ -140,14 +170,12 @@ try {
     }
 
     # Import mapping
-    $mapping = Import-Csv $config.MappingFile -Delimiter ";"
-    $mappedObject = $mapping | Where-Object { $_.Id -eq $p.PrimaryContract.Title.ExternalId }
-    $account.userType = $mappedObject.Discipline
+    $mapping = Import-Csv $config.MappingFile -Delimiter ";" -Encoding default
+    $mappedObject = $mapping | Where-Object { $_.Id -eq $p.PrimaryContract.Title.ExternalId }    
     $account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline = $mappedObject.Discipline
 
     # Add account password and initials to the account object.
-    $account.password = (Set-YsisV2Password -Length 12 -Characters 'ABCDEFGHKLMNOPRSTUVWXYZ1234567890!@#&')
-    $account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials = Set-YsisV2Initials -Person $p
+    $account.password = (Set-YsisV2Password -Length 12 -Characters 'ABCDEFGHKLMNOPRSTUVWXYZ1234567890!@#&')    
 
     # Requesting authorization token
     $splatRequestToken = @{
@@ -184,35 +212,106 @@ try {
     # If the discipline does not match, a new account will be created.
     if ($responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline -ne $account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline -or $null -eq $responseUser) {
         $action = 'Create-Correlate'
-    } elseif ($config.UpdatePersonOnCorrelate -eq $true -and $responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline -eq $account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline) {
+    }
+    elseif ($config.UpdatePersonOnCorrelate -eq $true -and $responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline -eq $account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline) {
         $action = 'Update-Correlate'
-    } else {
+    }
+    else {
         $action = 'Correlate'
     }
 
+    if ($null -ne $mappedObject) {
+        # Set Role
+        $splatRoleParams = @{
+            Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/roles"
+            Method      = 'GET'
+            Headers     = $headers
+            ContentType = 'application/json'
+        }
+        $roles = Invoke-RestMethod @splatRoleParams -Verbose:$false
+
+        # Retrieve role
+        $account.roles[0].displayName = $mappedObject.Description    
+        $account.roles[0].value = ($roles | Where-Object displayName -eq $($mappedObject.Description)).value
+
+        if ($null -eq ($roles | Where-Object displayName -eq $($mappedObject.Description)).value) {
+            $account.PSObject.Properties.Remove('roles')
+        }
+    }
+
     # Add a warning message showing what will happen during enforcement
-    if ($dryRun -eq $true) {
-        Write-Warning "[DryRun] $action YsisV2 account of type: [$($account.userType)] and discipline: [$($account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline)] for: [$($p.DisplayName)], will be executed during enforcement"
+    if ($dryRun -eq $true) {        
+        Write-Warning "[DryRun] $action YsisV2 account with discipline: [$($account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline)] for: [$($p.DisplayName)], will be executed during enforcement"
+        switch ($action) {
+            'Create-Correlate' {
+                # Add account password and initials to the account object.
+                $account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials = Set-YsisV2Initials -Person $p -Iteration 0
+
+                $reference = @{
+                    Id           = $null
+                    UserName     = $account.userName
+                    YsisInitials = $account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials
+                    Discipline   = $account.discipline
+                }
+                break
+            }
+            default {
+                $reference = @{
+                    Id           = $responseUser.id
+                    UserName     = $responseUser.userName
+                    YsisInitials = $responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials
+                    Discipline   = $responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline
+                }
+                break
+            }
+        }      
     }
 
     # Process
     if (-not($dryRun -eq $true)) {
+        if ($null -eq $mappedObject.Discipline) {
+            throw "No discipline could be mapped for jobtitle [$($p.PrimaryContract.Title.ExternalId) - $($p.PrimaryContract.Title.Name)]"
+        }
         switch ($action) {
             'Create-Correlate' {
                 Write-Verbose 'Creating and correlating YsisV2 account'
-                $splatCreateUserParams = @{
-                    Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users"
-                    Headers     = $headers
-                    Method      = 'POST'
-                    Body        = $account | ConvertTo-Json
-                    ContentType = 'application/scim+json'
-                }
-                $responseCreateUser = Invoke-RestMethod @splatCreateUserParams -Verbose:$false
-                $reference = @{
-                    Id         = $responseCreateUser.id
-                    UserName   = $responseCreateUser.userName
-                    Discipline = $responseCreateUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline
-                }
+                $maxIterations = 9
+                $Iterator = 0
+                $uniqueness = $false
+                do {                    
+                    # Add account password and initials to the account object.
+                    $account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials = Set-YsisV2Initials -Person $p -Iteration $Iterator
+                
+                    try {
+                        $splatCreateUserParams = @{
+                            Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users"
+                            Headers     = $headers
+                            Method      = 'POST'
+                            Body        = $account | ConvertTo-Json
+                            ContentType = 'application/scim+json;charset=UTF-8'
+                        }
+                        
+                        $responseCreateUser = Invoke-RestMethod @splatCreateUserParams -Verbose:$false
+                        $uniqueness = $true
+                        $reference = @{
+                            Id           = $responseCreateUser.id
+                            UserName     = $responseCreateUser.userName
+                            YsisInitials = $responseCreateUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials
+                            Discipline   = $responseCreateUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline
+                        }
+                    }
+                    catch {       
+                        $ex = $PSItem             
+                        $errorObj = Resolve-YsisV2Error -ErrorObject $ex    
+                        if ($_.Exception.Response.StatusCode -eq 'Conflict' -and $($errorObj.FriendlyMessage) -match "A user with the 'ysisInitials'") {
+                            Write-Verbose -Verbose "YSIS-Initials in use, iterating"
+                            $Iterator++
+                        }
+                        else {                            
+                            throw $_
+                        }
+                    }
+                }while ($uniqueness -ne $true -and $Iterator -lt $maxIterations)
                 break
             }
 
@@ -220,18 +319,50 @@ try {
                 Write-Verbose 'Updating and correlating YsisV2 account'
                 # The password is immutable and therefore, cannot be updated
                 $account.PSObject.Properties.Remove('password')
+                
+                # Set Ysis-Initials to existing
+                $account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials = $responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials
+                
+                # Set Gender to existing if unknown in person
+                if ([String]::IsNullOrEmpty($p.Details.Gender)) {
+                    $account.Gender = $responseUser.Gender
+                }
+
+                # Set Phonenumbers to existing
+                $account.phoneNumbers[0].value = ($responseUser.phoneNumbers | Where-Object type -eq 'work').value                
+                $account.phoneNumbers[1].value = ($responseUser.phoneNumbers | Where-Object type -eq 'mobile').value
+
+                # Set Roles to existing
+                if (!([string]::IsNullOrEmpty($responseUser.roles))) {
+                    $account.roles = $responseUser.roles
+                }
+                
+                # Set Modules to existing
+                if ($responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.modules.count -gt 0) {
+                    $account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.modules = $responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.modules
+                }                
+                
+                # Set Username to existing (case-sensitive in Ysis)
+                if ($account.userName -ieq $responseUser.userName) {        
+                    $account.userName = $responseUser.userName
+                }
+
+                $account.active = $responseUser.active   
+
                 $splatUpdateUserParams = @{
                     Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($responseUser.id)"
                     Headers     = $headers
                     Method      = 'PUT'
                     Body        = $account | ConvertTo-Json
-                    ContentType = 'application/scim+json'
+                    ContentType = 'application/scim+json;charset=UTF-8'
                 }
                 $responseUpdateUser = Invoke-RestMethod @splatUpdateUserParams -Verbose:$false
+                
                 $reference = @{
-                    Id         = $responseUpdateUser.id
-                    UserName   = $responseUpdateUser.userName
-                    Discipline = $responseUpdateUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline
+                    Id           = $responseUpdateUser.id
+                    UserName     = $responseUpdateUser.userName
+                    YsisInitials = $responseUpdateUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials
+                    Discipline   = $responseUpdateUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline
                 }
                 break
             }
@@ -239,9 +370,10 @@ try {
             'Correlate' {
                 Write-Verbose 'Correlating YsisV2 account'
                 $reference = @{
-                    Id         = $responseUser.id
-                    UserName   = $responseUser.userName
-                    Discipline = $responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline
+                    Id           = $responseUser.id
+                    UserName     = $responseUser.userName
+                    YsisInitials = $responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials
+                    Discipline   = $responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline
                 }
                 $accountReference = $reference
                 break
@@ -254,14 +386,16 @@ try {
                 IsError = $false
             })
     }
-} catch {
+}
+catch {
     $success = $false
     $ex = $PSItem
     if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
         $errorObj = Resolve-YsisV2Error -ErrorObject $ex
         $auditMessage = "Could not $action YsisV2 account. Error: $($errorObj.FriendlyMessage)"
         Write-Verbose "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
-    } else {
+    }
+    else {
         $auditMessage = "Could not $action YsisV2 account. Error: $($ex.Exception.Message)"
         Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
     }
@@ -269,8 +403,9 @@ try {
             Message = $auditMessage
             IsError = $true
         })
-# End
-} finally {
+    # End
+}
+finally {
     $result = [PSCustomObject]@{
         Success          = $success
         AccountReference = $reference

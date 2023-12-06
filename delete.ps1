@@ -1,15 +1,8 @@
 ########################################
 # HelloID-Conn-Prov-Target-YsisV2-Delete
 #
-# Version: 1.0.0
+# Version: 1.1.0
 ########################################
-# Initialize default values
-$config = $configuration | ConvertFrom-Json
-$p = $person | ConvertFrom-Json
-$aRef = $AccountReference | ConvertFrom-Json
-$success = $false
-$auditLogs = [System.Collections.Generic.List[PSCustomObject]]::new()
-
 # Enable TLS1.2
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
 
@@ -18,6 +11,13 @@ switch ($($config.IsDebug)) {
     $true { $VerbosePreference = 'Continue' }
     $false { $VerbosePreference = 'SilentlyContinue' }
 }
+
+# Initialize default values
+$config    = $configuration | ConvertFrom-Json
+$p         = $person | ConvertFrom-Json
+$aRef      = $AccountReference | ConvertFrom-Json
+$success   = $false
+$auditLogs = [System.Collections.Generic.List[PSCustomObject]]::new()
 
 #region functions
 function Resolve-YsisV2Error {
@@ -36,13 +36,13 @@ function Resolve-YsisV2Error {
         if ($null -eq $ErrorObject.ErrorDetails){
             $streamReaderResponse = [System.IO.StreamReader]::new($ErrorObject.Exception.Response.GetResponseStream()).ReadToEnd()
             if($null -ne $streamReaderResponse){
-                $convertedError = $streamReaderResponse | ConvertFrom-Json
-                $httpErrorObj.ErrorDetails = "Message: $($convertedError.error), description: $($convertedError.error_description)"
-                $httpErrorObj.FriendlyMessage =  "Message: $($convertedError.error), description: $($convertedError.error_description)"
+                $convertedError               = $streamReaderResponse | ConvertFrom-Json
+                $httpErrorObj.ErrorDetails    = "Message: $($convertedError.error), description: $($convertedError.error_description)"
+                $httpErrorObj.FriendlyMessage = "Message: $($convertedError.error), description: $($convertedError.error_description)"
             }
         } else {
-            $errorResponse = $ErrorObject.ErrorDetails | ConvertFrom-Json
-            $httpErrorObj.ErrorDetails = "Message: $($errorResponse.detail), type: $($errorResponse.scimType)"
+            $errorResponse                = $ErrorObject.ErrorDetails | ConvertFrom-Json
+            $httpErrorObj.ErrorDetails    = "Message: $($errorResponse.detail), type: $($errorResponse.scimType)"
             $httpErrorObj.FriendlyMessage = "$($errorResponse.detail), type: $($errorResponse.scimType)"
         }
     } catch {
@@ -96,10 +96,10 @@ try {
     }
 
     if ($responseUser){
-        $action = 'Found'
+        $action        = 'Found'
         $dryRunMessage = "Delete YsisV2 account for: [$($p.DisplayName)] will be executed during enforcement"
     } elseif($null -eq $responseUser) {
-        $action = 'NotFound'
+        $action        = 'NotFound'
         $dryRunMessage = "YsisV2 account for: [$($p.DisplayName)] not found. Possibly already deleted. Skipping action"
     }
     Write-Verbose $dryRunMessage
@@ -115,11 +115,11 @@ try {
             'Found'{
                 Write-Verbose "Deleting YsisV2 account with accountReference: [$($aRef.id)]"
                 $splatParams = @{
-                    Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($aRef.id)"
-                    Headers     = $headers
-                    Method      = 'DELETE'
+                    Uri     = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($aRef.id)"
+                    Headers = $headers
+                    Method  = 'DELETE'
                 }
-                $null = Invoke-RestMethod @splatParams -Verbose:$false
+                $null    = Invoke-RestMethod @splatParams -Verbose:$false
                 $success = $true
                 $auditLogs.Add([PSCustomObject]@{
                     Message = "Delete account for: [$($p.DisplayName)] was successful."
@@ -141,9 +141,9 @@ try {
     }
 } catch {
     $success = $false
-    $ex = $PSItem
+    $ex      = $PSItem
     if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
-        $errorObj = Resolve-YsisV2Error -ErrorObject $ex
+        $errorObj     = Resolve-YsisV2Error -ErrorObject $ex
         $auditMessage = "Could not delete YsisV2 account. Error: $($errorObj.FriendlyMessage)"
         Write-Verbose "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
     } else {
