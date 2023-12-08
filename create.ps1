@@ -30,24 +30,24 @@ $account.Discipline = $mappedObject.Discipline
 
 #Ysis account model mapping
 $Ysisaccount = [PSCustomObject]@{
-    schemas = @('urn:ietf:params:scim:schemas:core:2.0:User', 'urn:ietf:params:scim:schemas:extension:ysis:2.0:User','urn:ietf:params:scim:schemas:extension:enterprise:2.0:User')
-    userName = $account.UserName
-    name = [PSCustomObject]@{
+    schemas                                                      = @('urn:ietf:params:scim:schemas:core:2.0:User', 'urn:ietf:params:scim:schemas:extension:ysis:2.0:User', 'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User')
+    userName                                                     = $account.UserName
+    name                                                         = [PSCustomObject]@{
         givenName  = $account.GivenName
         familyName = $account.FamilyName
-        infix = $account.Infix
+        infix      = $account.Infix
     }
-    gender = $account.Gender
-    emails = @(
+    gender                                                       = $account.Gender
+    emails                                                       = @(
         [PSCustomObject]@{
             value   = $account.Email
             type    = 'work'
             primary = $true
         }
     )
-    roles = @()
-    entitlements = @()
-    phoneNumbers = @(
+    roles                                                        = @()
+    entitlements                                                 = @()
+    phoneNumbers                                                 = @(
         [PSCustomObject]@{
             value = $account.WorkPhone
             type  = 'work'
@@ -57,7 +57,7 @@ $Ysisaccount = [PSCustomObject]@{
             type  = 'mobile'
         }
     )
-    'urn:ietf:params:scim:schemas:extension:ysis:2.0:User' = [PSCustomObject]@{
+    'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'       = [PSCustomObject]@{
         ysisInitials = ''
         discipline   = $account.Discipline
         agbCode      = $account.AgbCode
@@ -69,7 +69,7 @@ $Ysisaccount = [PSCustomObject]@{
     "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User" = [PSCustomObject]@{
         employeeNumber = $account.EmployeeNumber
     }
-    password = $account.Password
+    password                                                     = $account.Password
 }
 
 #region functions
@@ -225,7 +225,7 @@ if ($actionContext.CorrelationConfiguration.Enabled) {
             })
         
         $outputContext.Success = $True   
-        if($actionContext.Configuration.UpdatePersonOnCorrelate -eq 'True'){     
+        if ($actionContext.Configuration.UpdatePersonOnCorrelate -eq 'True') {     
             $outputContext.AccountCorrelated = $True        
         }
     }
@@ -237,26 +237,35 @@ if (!$outputContext.AccountCorrelated) {
 
     if ([string]::IsNullOrEmpty($disciplineSearchValue)) {
         $incompleteAccount = $true
-        Write-Warning "No mapping has been found discipline on [$($account.Position.Id)]."
+        $message = "No mapping has been found discipline on [$($account.Position)]."
+        Write-Warning "No mapping has been found discipline on [$($account.Position)]."
     }
 
     if ([string]::IsNullOrEmpty($account.employeeNumber)) {
         $incompleteAccount = $true
+        $message = "Person does not has a employeenumber"
         Write-Warning "Person does not has a employeenumber"
     }
 
     if ($null -eq $mappedObject) {    
-            $incompleteAccount = $true
-            Write-Warning "No discipline-mapping found for [$($account.Position.Value)]"            
-        }
+        $incompleteAccount = $true
+        $message = "No discipline-mapping found for [$($account.Position)]"            
+        Write-Warning "No discipline-mapping found for [$($account.Position)]"            
+    }
+
+    if ($mappedObject.Count -gt 1) {
+        $incompleteAccount = $true
+        $message = "Multiple discipline-mappings found for [$($account.Position)]"            
+        Write-Warning "Multiple discipline-mappings found for [$($account.Position)]"            
+    }
 
     if ($incompleteAccount) {
         $outputContext.Success = $false
         $outputContext.AuditLogs.Add([PSCustomObject]@{
                 Action  = "CreateAccount" # Optionally specify a different action for this audit log
-                Message = "Failed to create account with username $($account.UserName), due to incomplete account."
+                Message = "Failed to create account with username $($account.UserName), due to incomplete account. $message"
                 IsError = $true
-            })    
+            })     
     }
     else {        
         Set-AccountDisciplineByMapping -account $ysisaccount -mappedObject $mappedObject
@@ -307,8 +316,7 @@ if (!$outputContext.AccountCorrelated) {
                         }
                     }
                 } while ($uniqueness -ne $true -and $Iterator -lt $maxIterations)
-                if(!($uniqueness -eq $true))
-                {
+                if (!($uniqueness -eq $true)) {
                     throw "A user with the 'ysisInitials' '$($account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)' already exists. YSIS-Initials out of iterations!"                      
                 }            
             }
@@ -330,13 +338,13 @@ if (!$outputContext.AccountCorrelated) {
                     })
             }        
         }    
-        if($actionContext.DryRun -eq $true) {
+        if ($actionContext.DryRun -eq $true) {
             $outputContext.AccountReference = "DRYRUN"
             $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "CreateAccount" # Optionally specify a different action for this audit log
-                Message = "Account with username [$($account.UserName)] and discipline [$($mappedObject.Discipline)] will be created."
-                IsError = $false
-            })
+                    Action  = "CreateAccount" # Optionally specify a different action for this audit log
+                    Message = "Account with username [$($account.UserName)] and discipline [$($mappedObject.Discipline)] will be created."
+                    IsError = $false
+                })
         }
         $outputContext.Data = $account 
     }

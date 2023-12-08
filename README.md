@@ -93,24 +93,24 @@ HelloID can archive an Ysis account, but can't dearchive an Ysis account. This c
 ### Mapping
 The mandatory and recommended field mapping is listed below. Some fields are required by Ysis and are set on creating an account. When an update is triggered, the required/immutable fields are set to the existing values from the existing user.
 
-| Name           | Create | Enable | Update | Disable | Delete | Store in account data | Default mapping                            | Mandatory | Comment                                        |
-| -------------- | ------ | ------ | ------ | ------- | ------ | --------------------- | ------------------------------------------ | --------- | ---------------------------------------------- |
-| AgbCode     | X      |        | X      |         |        | No            |  None       |        |  |
-| BigNumber | X      |        | X      |         |        | No  | None  |        | |
-| Discipline           | X       |        | X      |         |        | Yes                   | Calculated by create and update | Yes          | Calculated in script to trigger a conditional event  |
-| Email           | X       |        | X      |         |        | No                   | Mailaddress from dependent system |           | E-Mail work; Ysis accepts only one mailaddress                                  |
-| EmployeeNumber           | X       |        | X      |         |        | No                   | ExternalId | Yes          | Employeenumber                                    |
-| FamilyName           | X       |        | X      |         |        | No                   | LastName |  Yes         | Lastname based on naming convention                                    |
-| Gender           | X       |        | X      |         |        | No                   | Gender |           | Gender                                    |
-| GivenName           | X       |        | X      |         |        | No                   | NickName | Yes          | Nickname                                    |
-| Infix           | X       |        | X      |         |        | No                   |LastName prefix |           | Prefix based on naming convention|
-| Initials           | X       |        | X      |         |        | No                   | Initials | Yes          | Initials; required but immutable                                    |
-| MobilePhone           | X       |        | X      |         |        | No                   | Work mobile |           | Mobile phonenumber                                    |
-| Password           | X      |        |        |         |        | No                   | Generated | Yes (on creation)           | Initial password on creation                                   |
-| Position           | X       |        | X      |         |        | No                   | Title |           | Jobtitle                                    |
-| UserName           | X       |        | X      |         | X      | No                   | Username from dependent system | Yes          | Unique username in Ysis, also used for SSO                   |
-| WorkPhone           | X       |        | X      |         |        | No                   | Work phone |           | Fixed phonenumber                                    |
-| YsisInitials           | X       |        | X      |         | X      | Yes                   | Generated | Yes          | Required immutable unique combination                                    |
+| Name           | Create | Enable | Update | Disable | Delete | Store in account data | Used in Notification | Default mapping                            | Mandatory | Comment                                        |
+| -------------- | ------ | ------ | ------ | ------- | ------ | ------ | --------------------- | ------------------------------------------ | --------- | ---------------------------------------------- |
+| AgbCode     | X      |        | X      |         |        | No            | No | None       |        |  |
+| BigNumber | X      |        | X      |         |        | No  |  No| None  |        | |
+| Discipline           | X       |        | X      |         |        | Yes              |  Yes   | Calculated by create and update | Yes          | Calculated in script to trigger a conditional event  |
+| Email           | X       |        | X      |         |        | No             |    No  | Complex: Mailaddress from dependent system |           | E-Mail work; Ysis accepts only one mailaddress                                  |
+| EmployeeNumber           | X       |        | X      |         |        | No                   | No  | Field: ExternalId | Yes          | Employeenumber                                    |
+| FamilyName           | X       |        | X      |         |        | No                   |  No | Complex: LastName |  Yes         | Lastname based on naming convention                                    |
+| Gender           | X       |        | X      |         |        | No                   |  No | Complex: Gender |           | Gender                                    |
+| GivenName           | X       |        | X      |         |        | No                   | No  | Field: NickName | Yes          | Nickname                                    |
+| Infix           | X       |        | X      |         |        | No                   | No  | Complex: LastName prefix |           | Prefix based on naming convention|
+| Initials           | X       |        | X      |         |        | No                   | No  | Field: Initials | Yes          | Initials; required but immutable                                    |
+| MobilePhone           | X       |        | X      |         |        | No                   | No  | Field: Work mobile |           | Mobile phonenumber                                    |
+| Password           | X      |        |        |         |        | No                   | No  | Complex: Generated | Yes (on creation)           | Initial password on creation                                   |
+| Position           | X       |        | X      |         |        | No                   | No  | Field: Title |           | Jobtitle                                    |
+| UserName           | X       |        | X      |         | X      | No                   | Yes  | Complex: Username from dependent system | Yes          | Unique username in Ysis, also used for SSO                   |
+| WorkPhone           | X       |        | X      |         |        | No                   | No   | Field: Work phone |           | Fixed phonenumber                                    |
+| YsisInitials           | X       |        | X      |         | X      | Yes                   | Yes  | Complex: Generated | Yes          | Required immutable unique combination                                    |
 
 ### Correlation
 It is mandatory to enable the correlation in the correlation tab. The default value for "person correlation field" is " ExternalId". The default value for "Account Correlation field" is "EmployeeNumber".

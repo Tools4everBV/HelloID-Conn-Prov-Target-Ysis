@@ -197,6 +197,15 @@ $ysisaccount = [PSCustomObject]@{
 if (-Not($actionContext.DryRun -eq $true)) {    
     # Write update logic here
     try {        
+        if ($null -eq $mappedObject) {            
+            throw "No discipline-mapping found for [$($account.Position)]"                            
+        }
+
+        if ($mappedObject.Count -gt 1) {
+            
+            throw "Multiple discipline-mappings found for [$($account.Position)]"                    
+        }
+        
         Write-Verbose "Updating YsisV2 account with accountReference: [$($actionContext.References.Account)]"
         $splatUpdateUserParams = @{
             Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
