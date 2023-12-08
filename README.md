@@ -1,7 +1,4 @@
 # HelloID-Conn-Prov-Target-YsisV2
-| :warning: Warning |
-|:---------------------------|
-| Note that this connector is not yet implemented. Contact our support for further assistance.       |
 
 | :Information: Warning |
 |:---------------------------|
