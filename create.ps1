@@ -231,7 +231,7 @@ if ($actionContext.CorrelationConfiguration.Enabled) {
     }
 }
 
-if (!$outputContext.AccountCorrelated) {
+if (!$outputContext.AccountCorrelated -and $null -eq $correlatedAccount) {
     # Create account object from mapped data and set the correct account reference
     $incompleteAccount = $false
 
