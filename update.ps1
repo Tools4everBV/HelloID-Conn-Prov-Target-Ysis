@@ -194,18 +194,29 @@ $ysisaccount = [PSCustomObject]@{
     }    
 }
 
-if (-Not($actionContext.DryRun -eq $true)) {    
-    # Write update logic here
-    try {        
-        if ($null -eq $mappedObject) {            
-            throw "No discipline-mapping found for [$($account.Position)]"                            
-        }
+   
+# Write update logic here
+try {        
+    if ($null -eq $mappedObject) {            
+        throw "No discipline-mapping found for [$($account.Position)]"                            
+    }
 
-        if ($mappedObject.Count -gt 1) {
-            
-            throw "Multiple discipline-mappings found for [$($account.Position)]"                    
-        }
+    if ($mappedObject.Count -gt 1) {
         
+        throw "Multiple discipline-mappings found for [$($account.Position)]"                    
+    }
+
+    # Calculate changes between current data and provided data
+    $splatCompareProperties = @{
+        ReferenceObject  = @($previousAccount.PSObject.Properties) # Only select the properties to update
+        DifferenceObject = @($account.PSObject.Properties) # Only select the properties to update
+    }
+    $changedProperties = $null
+    $changedProperties = (Compare-Object @splatCompareProperties -PassThru)
+    $oldProperties = $changedProperties.Where( { $_.SideIndicator -eq '<=' })
+    $newProperties = $changedProperties.Where( { $_.SideIndicator -eq '=>' })
+
+    if (($newProperties | Measure-Object).Count -ge 1) {
         Write-Verbose "Updating YsisV2 account with accountReference: [$($actionContext.References.Account)]"
         $splatUpdateUserParams = @{
             Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
@@ -214,37 +225,47 @@ if (-Not($actionContext.DryRun -eq $true)) {
             Body        = $ysisaccount | ConvertTo-Json
             ContentType = 'application/scim+json;charset=UTF-8'
         }
-
-        $null = Invoke-RestMethod @splatUpdateUserParams -Verbose:$false
-
+        if (-Not($actionContext.DryRun -eq $true)) { 
+            $null = Invoke-RestMethod @splatUpdateUserParams -Verbose:$false
+        }
+    
         $outputContext.Success = $true
         $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "UpdateAccount" # Optionally specify a different action for this audit log
-                Message = "Account with username $($account.userName) updated"
-                IsError = $false
-            })
-            
+            Action  = "UpdateAccount" # Optionally specify a different action for this audit log
+            Message = "Account with username $($account.userName) updated"
+            IsError = $false
+        })
     }
-    catch {        
-        $outputContext.Success = $false
-        $ex = $PSItem
-        
-        if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
-            $errorObj = Resolve-YsisV2Error -ErrorObject $ex
-            $auditMessage = "Could not update YsisV2 account. Error: $($errorObj.FriendlyMessage)"
-            Write-Verbose "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
-        }
-        else {
-            $auditMessage = "Could not update YsisV2 account. Error: $($ex.Exception.Message)"
-            Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
-        }
+    else {
+        Write-Verbose "No Updates for YsisV2 account with accountReference: [$($actionContext.References.Account)]"
+        $outputContext.Success = $true
         $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "UpdateAccount" # Optionally specify a different action for this audit log
-                Message = $auditMessage
-                IsError = $true
-            })
-    }    
+            Action  = "UpdateAccount" # Optionally specify a different action for this audit log
+            Message = "Account with username $($account.userName) has no updates"
+            IsError = $false
+        })
+    }   
 }
+catch {        
+    $outputContext.Success = $false
+    $ex = $PSItem
+    
+    if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
+        $errorObj = Resolve-YsisV2Error -ErrorObject $ex
+        $auditMessage = "Could not update YsisV2 account. Error: $($errorObj.FriendlyMessage)"
+        Write-Verbose "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
+    }
+    else {
+        $auditMessage = "Could not update YsisV2 account. Error: $($ex.Exception.Message)"
+        Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
+    }
+    $outputContext.AuditLogs.Add([PSCustomObject]@{
+            Action  = "UpdateAccount" # Optionally specify a different action for this audit log
+            Message = $auditMessage
+            IsError = $true
+        })
+}    
+
 
 $outputContext.Data = $account
 $outputContext.PreviousData = $previousAccount
