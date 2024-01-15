@@ -1,7 +1,10 @@
 # HelloID-Conn-Prov-Target-YsisV2
+
 | :warning: Warning |
 |:---------------------------|
 | This script is for the new powershell connector. Make sure to use the mapping and correlation keys like mentionded in this readme. For more information, please read our [documentation](https://docs.helloid.com/en/provisioning/target-systems/powershell-v2-target-systems.html). Note that this connector is not yet implemented. Contact our support for further assistance.       |
+| This connector replaces the current [Ysis connector](https://github.com/Tools4everBV/HelloID-Conn-Prov-Target-Ysis).  |
+=======
 
 | :information_source: Information |
 |:---------------------------|
