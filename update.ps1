@@ -1,42 +1,32 @@
 ########################################
 # HelloID-Conn-Prov-Target-YsisV2-Update
 #
-# Version: 1.1.0
+# Version: 2.0.0
 ########################################
-# Enable TLS1.2
-[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
+# Initialize default values
+$config = $actionContext.Configuration
+$outputContext.success = $false;
 
 # Set debug logging
 switch ($($config.IsDebug)) {
-    $true { $VerbosePreference = 'Continue' }
-    $false { $VerbosePreference = 'SilentlyContinue' }
+    $true { $VerbosePreference = "Continue" }
+    $false { $VerbosePreference = "SilentlyContinue" }
 }
+$InformationPreference = "Continue"
+$WarningPreference = "Continue"
 
-# Initialize default values
-$config = $configuration | ConvertFrom-Json
-$p = $person | ConvertFrom-Json
-$aRef = $AccountReference | ConvertFrom-Json
-$success = $false
-$auditLogs = [System.Collections.Generic.List[PSCustomObject]]::new()
+# Create account object from mapped data and set the correct account reference
+$account = $actionContext.Data;
+$person = $personContext.Person;
 
-# Smtp configuration
-$smtpServerAddress = $config.MailServer
-$to = $config.MailSendTo
+$disciplineSearchField = "JobTitleId";
+$disciplineSearchValue = $personContext.Person.PrimaryContract.Title.Code
 
-#region functions
-function Set-YsisV2Initials {
-    param (
-        [object]
-        $PersonObject
-    )
+# set dynamic values
+$mapping = Import-Csv "$($config.MappingFile)" -Delimiter ";"
+$mappedObject = $mapping | Where-Object { $_.$disciplineSearchField -eq $disciplineSearchValue }
 
-    $initials = $PersonObject.ExternalId + '-' + ($PersonObject.Name.Initials -replace '\.')
-    if ($initials.Length -gt 10) {
-        $initials = $initials.Substring(0, 10)
-    }
-
-    Write-Output $initials
-}
+$account.Discipline = $mappedObject.Discipline
 
 function Resolve-YsisV2Error {
     param (
@@ -70,66 +60,10 @@ function Resolve-YsisV2Error {
     }
     Write-Output $httpErrorObj
 }
-#endregion
 
-# Account mapping
-$account = [PSCustomObject]@{
-    id                                                           = $($aRef.Id)
-    schemas                                                      = @('urn:ietf:params:scim:schemas:core:2.0:User', 'urn:ietf:params:scim:schemas:extension:ysis:2.0:User', 'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User')
-    userName                                                     = $p.ExternalId
-    name                                                         = [PSCustomObject]@{
-        givenName  = $p.Name.NickName
-        familyName = switch ($p.Name.Convention) {
-            'B' { $p.Name.FamilyName }
-            'PB' { $p.Name.FamilyNamePartner + ' - ' + $p.Name.FamilyNamePrefix + ' ' + $p.Name.FamilyName }
-            'P' { $p.Name.FamilyNamePartner }
-            default { $p.Name.FamilyName + ' - ' + $p.Name.FamilyNamePartnerPrefix + ' ' + $p.Name.FamilyNamePartner }
-        }
-        infix      = switch ($p.Name.Convention) {
-            'B' { $p.Name.FamilyNamePrefix }
-            default { $p.Name.FamilyNamePartnerPrefix }
-        }
-    }
-    active                                                       = $true
-    gender                                                       = switch ($p.Details.Gender) {
-        "V" { "FEMALE" }
-        "M" { "MALE" }
-        default { "UNKNOWN" }
-    }
-    emails                                                       = @(
-        [PSCustomObject]@{
-            value   = $p.accounts.MicrosoftActiveDirectory.mail
-            type    = 'work'
-            primary = $true
-        }
-    )
-    roles                                                        = @()
-    entitlements                                                 = @()
-    phoneNumbers                                                 = @(
-        [PSCustomObject]@{
-            value = $p.Contact.Business.Phone.Fixed
-            type  = 'work'
-        }
-    )
-    'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'       = [PSCustomObject][ordered]@{
-        # Initials must be unique within Ysis
-        ysisInitials = ''
-        discipline   = ''
-        agbCode      = $null
-        initials     = $p.Name.Initials
-        bigNumber    = $null
-        position     = $p.PrimaryContract.Title.Name
-        modules      = @()
-    }
-    "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User" = [PSCustomObject]@{
-        employeeNumber = $p.ExternalId
-    }
-}
-
-# Begin
 try {
     # Verify if [aRef] has a value
-    if ([string]::IsNullOrEmpty($($aRef))) {
+    if ([string]::IsNullOrEmpty($($actionContext.References.Account))) {    
         throw 'The account reference could not be found'
     }
 
@@ -152,167 +86,26 @@ try {
     $headers.Add('Accept', 'application/json')
     $headers.Add('Content-Type', 'application/json')
 
-    Write-Verbose "Verifying if YsisV2 account for [$($p.DisplayName)] exists"
+    Write-Verbose "Verifying if YsisV2 account for [$($person.DisplayName)] exists"
     try {
         $splatParams = @{
-            Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($aRef.Id)"
+            Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
             Headers     = $headers
             ContentType = 'application/json'
         }
-        $currentAccount = Invoke-RestMethod @splatParams -Verbose:$false
+        $currentAccount = Invoke-RestMethod @splatParams -Verbose:$false     
     }
     catch {
         if ($_.Exception.Response.StatusCode -eq 404) {
             $auditLogs.Add([PSCustomObject]@{
-                    Message = "YsisV2 account for: [$($p.DisplayName)] not found. Possibly deleted"
+                    Message = "YsisV2 account for: [$($person.DisplayName)] not found. Possibly deleted"
                     IsError = $false
                 })
         }
         throw
     }
-
-    # Verify if the account must be updated
-    # Set Ysis-Initials to existing
-    $account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials
-
-    # Set Username to existing (case-sensitive in Ysis)
-    if ($account.userName -ieq $currentAccount.userName) {        
-        $account.userName = $currentAccount.userName
-    }
-
-    # Set Gender to existing if unknown in person
-    if ([String]::IsNullOrEmpty($p.Details.Gender)) {
-        $account.Gender = $currentAccount.Gender
-    }
-
-    # Set Phonenumbers to existing
-    $account.phoneNumbers[0].value = ($currentAccount.phoneNumbers | Where-Object type -eq 'work').value
-    $account.phoneNumbers[1].value = ($currentAccount.phoneNumbers | Where-Object type -eq 'mobile').value
-
-    # Set Roles to existing
-    $account.roles = $currentAccount.roles
-
-    # Set Modules to existing
-    $account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.modules = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.modules
-
-    # Import mapping
-    $mapping = Import-Csv $config.MappingFile -Delimiter ";" -Encoding default
-    $mappedObject = $mapping | Where-Object { $_.Id -eq $p.PrimaryContract.Title.ExternalId }
-    $account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline = $mappedObject.Discipline
-
-    # Verify if discipline needs an update
-    if ($aRef.Discipline -ne $($account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline)) {
-        $action = 'Update-Discipline'
-        $dryRunMessage = "The account discipline has changed from: [$($currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline)] to: [$($account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline)]."
-    }
-    else {
-        # Compare objects
-        $splatCompareProperties = @{
-            ReferenceObject  = @($currentAccount.PSObject.Properties)
-            DifferenceObject = @($account.PSObject.Properties)
-        }
-        $propertiesChanged = (Compare-Object @splatCompareProperties -PassThru).Where({ $_.SideIndicator -eq '=>' })
-        if ($propertiesChanged) {
-            $action = 'Update'
-            $dryRunMessage = "Account property(s) required to update: [$($propertiesChanged.name -join ",")]"
-        }
-        elseif (-not $propertiesChanged) {
-            $action = 'NoChanges'
-            $dryRunMessage = 'No changes will be made to the account during enforcement'
-        }
-        elseif ($null -eq $currentAccount) {
-            $action = 'NotFound'
-            $dryRunMessage = "YsisV2 account for: [$($p.DisplayName)] not found. Possibly deleted"
-        }
-    }
-
-    Write-Verbose $dryRunMessage
-
-    # Add an auditMessage showing what will happen during enforcement
-    if ($dryRun -eq $true) {
-        Write-Warning "[DryRun] $dryRunMessage"
-    }
-
-    # Process
-    if (-not($dryRun -eq $true)) {
-        if ($null -eq $mappedObject.Discipline) {
-            throw "No discipline could be mapped for jobtitle [$($p.PrimaryContract.Title.ExternalId) - $($p.PrimaryContract.Title.Name)]"
-        }
-        switch ($action) {
-            'Update' {
-                Write-Verbose "Updating YsisV2 account with accountReference: [$($aRef.Id)]"
-                $splatUpdateUserParams = @{
-                    Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($aRef.Id)"
-                    Headers     = $headers
-                    Method      = 'PUT'
-                    Body        = $account | ConvertTo-Json
-                    ContentType = 'application/scim+json'
-                }
-                $null = Invoke-RestMethod @splatUpdateUserParams -Verbose:$false
-                $success = $true
-                $auditLogs.Add([PSCustomObject]@{
-                        Message = 'Update account was successful'
-                        IsError = $false
-                    })
-                break
-            }
-
-            'Update-Discipline' {
-                Write-Verbose "The discipline for account with accountReference: [$($aRef.Id)] has changed to: [$($account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline)]"
-                $mailBody = "
-                <p>Dear [Recipient],
-                </p>
-                <p>The discipline of person [$($p.DisplayName)] has been updated from: [$($aRef.Discipline)] to: [$($account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline)]. However, we would like to bring to your attention that HelloId will <b>not</b> automatically update the account.<Br>
-                </p>
-                <p>Kindly take action and manually update the account for: [$($p.DisplayName)] with the new discipline.</p>
-                <p>Kind regards,<br>
-                </p>
-                <p>HelloID<br>
-                </p>
-                "
-                $Subject = "Ysis: The discipline for user: [$($aRef.Id)] will need to be updated to [$($account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline)]"
-
-                $splatMailParams = @{
-                    From       = 'noreply@HelloID.com'
-                    To         = $to
-                    Subject    = $Subject
-                    SmtpServer = $smtpServerAddress
-                    UseSsl     = $false
-                    BodyAsHtml = $true
-                    Body       = $mailBody
-                }
-                Send-MailMessage @splatMailParams -ErrorAction Stop
-                $success = $true
-                $auditLogs.Add([PSCustomObject]@{
-                        Message = "The discipline for person: [$($p.DisplayName)] needs to be updated to: [$discipline]. An email is sent to: [$($splatMailParams.To)]"
-                        IsError = $false
-                    })
-                    
-            }
-
-            'NoChanges' {
-                Write-Verbose "No changes to YsisV2 account with accountReference: [$aRef]"
-                $success = $true
-                $auditLogs.Add([PSCustomObject]@{
-                        Message = 'No changes will be made to the account during enforcement'
-                        IsError = $false
-                    })
-                break
-            }
-
-            'NotFound' {
-                $success = $false
-                $auditLogs.Add([PSCustomObject]@{
-                        Message = "YsisV2 account for: [$($p.DisplayName)] not found. Possibly deleted"
-                        IsError = $true
-                    })
-                break
-            }
-        }
-    }
 }
-catch {
-    $success = $false
+catch {        
     $ex = $PSItem
     if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
         $errorObj = Resolve-YsisV2Error -ErrorObject $ex
@@ -327,13 +120,152 @@ catch {
             Message = $auditMessage
             IsError = $true
         })
-    # End
 }
-finally {
-    $result = [PSCustomObject]@{
-        Success   = $success
-        Account   = $account
-        Auditlogs = $auditLogs
+
+# Ysis-initials are mandatory but immutable, so set Ysis-Initials to existing
+$account.YsisInitials = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials
+
+$previousAccount = [PSCustomObject]@{
+    AgbCode        = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.agbCode
+    BigNumber      = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.bigNumber
+    Discipline     = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline
+    YsisInitials   = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials
+    Email          = $currentAccount.Emails.Value
+    Gender         = $currentAccount.gender
+    FamilyName     = $currentAccount.name.familyName
+    GivenName      = $currentAccount.name.givenName
+    Infix          = $currentAccount.name.infix
+    Initials       = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.initials
+    EmployeeNumber = $currentAccount.'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User'.employeeNumber
+    Position       = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.position    
+    MobilePhone    = ($($currentAccount.phoneNumbers) | Where-Object Type -eq 'mobile').value
+    WorkPhone      = ($($currentAccount.phoneNumbers) | Where-Object Type -eq 'work').value
+    UserName       = $currentAccount.userName
+}
+
+# Set Username to existing (case-sensitive in Ysis)
+if($account.userName -ieq $currentAccount.userName) {        
+    $account.userName = $currentAccount.userName
+}
+
+# Ysis account model mapping
+# Roles are based on discipline and discipline can't be changed, so set Roles to existing    
+# Modules could be changed manually, so set Modules to existing
+# Discipline is immutable, so set Discipline to existing. When discipline is changed, notification will be send.
+
+$ysisaccount = [PSCustomObject]@{
+    schemas                                                      = @('urn:ietf:params:scim:schemas:core:2.0:User', 'urn:ietf:params:scim:schemas:extension:ysis:2.0:User', 'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User')
+    userName                                                     = $account.UserName
+    name                                                         = [PSCustomObject]@{
+        familyName = $account.FamilyName
+        givenName  = $account.GivenName
+        infix      = $account.Infix
     }
-    Write-Output $result | ConvertTo-Json -Depth 10
+    active                                                       = $currentAccount.active
+    gender                                                       = $account.Gender
+    emails                                                       = @(
+        [PSCustomObject]@{
+            value = $account.Email
+        }
+    )
+    phoneNumbers                                                 = @(
+        [PSCustomObject]@{
+            type  = 'work'
+            value = $account.WorkPhone
+        },
+        [PSCustomObject]@{
+            type  = 'mobile'
+            value = $account.MobilePhone
+        }
+    )
+    roles                                                        = $currentAccount.roles
+    entitlements                                                 = $currentAccount.entitlements
+    'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'       = [PSCustomObject]@{
+        ysisInitials = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials
+        discipline   = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline
+        agbCode      = $account.AgbCode
+        initials     = $account.Initials
+        bigNumber    = $account.BigNumber
+        position     = $account.Position        
+        modules      = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.modules
+    }
+    "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User" = [PSCustomObject]@{
+        employeeNumber = $account.EmployeeNumber
+    }    
 }
+
+   
+# Write update logic here
+try {        
+    if ($null -eq $mappedObject) {            
+        throw "No discipline-mapping found for [$($account.Position)]"                            
+    }
+
+    if ($mappedObject.Count -gt 1) {
+        
+        throw "Multiple discipline-mappings found for [$($account.Position)]"                    
+    }
+
+    # Calculate changes between current data and provided data
+    $splatCompareProperties = @{
+        ReferenceObject  = @($previousAccount.PSObject.Properties) # Only select the properties to update
+        DifferenceObject = @($account.PSObject.Properties) # Only select the properties to update
+    }
+    $changedProperties = $null
+    $changedProperties = (Compare-Object @splatCompareProperties -PassThru)
+    $oldProperties = $changedProperties.Where( { $_.SideIndicator -eq '<=' })
+    $newProperties = $changedProperties.Where( { $_.SideIndicator -eq '=>' })
+
+    if (($newProperties | Measure-Object).Count -ge 1) {
+        Write-Verbose "Updating YsisV2 account with accountReference: [$($actionContext.References.Account)]"
+        $splatUpdateUserParams = @{
+            Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
+            Headers     = $headers
+            Method      = 'PUT'
+            Body        = $ysisaccount | ConvertTo-Json
+            ContentType = 'application/scim+json;charset=UTF-8'
+        }
+        if (-Not($actionContext.DryRun -eq $true)) { 
+            $null = Invoke-RestMethod @splatUpdateUserParams -Verbose:$false
+        }
+    
+        $outputContext.Success = $true
+        $outputContext.AuditLogs.Add([PSCustomObject]@{
+            Action  = "UpdateAccount" # Optionally specify a different action for this audit log
+            Message = "Account with username $($account.userName) updated"
+            IsError = $false
+        })
+    }
+    else {
+        Write-Verbose "No Updates for YsisV2 account with accountReference: [$($actionContext.References.Account)]"
+        $outputContext.Success = $true
+        $outputContext.AuditLogs.Add([PSCustomObject]@{
+            Action  = "UpdateAccount" # Optionally specify a different action for this audit log
+            Message = "Account with username $($account.userName) has no updates"
+            IsError = $false
+        })
+    }   
+}
+catch {        
+    $outputContext.Success = $false
+    $ex = $PSItem
+    
+    if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
+        $errorObj = Resolve-YsisV2Error -ErrorObject $ex
+        $auditMessage = "Could not update YsisV2 account. Error: $($errorObj.FriendlyMessage)"
+        Write-Verbose "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
+    }
+    else {
+        $auditMessage = "Could not update YsisV2 account. Error: $($ex.Exception.Message)"
+        Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
+    }
+    $outputContext.AuditLogs.Add([PSCustomObject]@{
+            Action  = "UpdateAccount" # Optionally specify a different action for this audit log
+            Message = $auditMessage
+            IsError = $true
+        })
+}    
+
+
+$outputContext.Data = $account
+$outputContext.PreviousData = $previousAccount
