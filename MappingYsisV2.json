@@ -1,0 +1,271 @@
+{
+  "Version": "v1",
+  "MappingFields": [
+    {
+      "Name": "Email",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create",
+            "Update"
+          ],
+          "MappingMode": "Complex",
+          "Value": "\"//YSIS only accepts one e-mailadress\\r\\nfunction GetMailAddresses(){   \\r\\n\\r\\n    let mail = \\\"\\\"    \\r\\n    \\r\\n    if(typeof Person.Accounts._bccd667807a9431a9d4acfc64c19a3d6.mail !== 'undefined' && Person.Accounts._bccd667807a9431a9d4acfc64c19a3d6.mail) {        \\r\\n        mail = Person.Accounts._bccd667807a9431a9d4acfc64c19a3d6.mail\\r\\n    }   \\r\\n\\r\\n    return mail\\r\\n}\\r\\nGetMailAddresses()\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
+        }
+      ]
+    },
+    {
+      "Name": "Gender",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create",
+            "Update"
+          ],
+          "MappingMode": "Complex",
+          "Value": "\"function getValue() {\\r\\n    switch (Person.Details.Gender) {\\r\\n        case \\\"V\\\": return \\\"FEMALE\\\"\\r\\n        case \\\"M\\\": return \\\"MALE\\\"\\r\\n        default: return\\\"UNKNOWN\\\"\\r\\n    }    \\r\\n}\\r\\ngetValue();\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
+        }
+      ]
+    },
+    {
+      "Name": "GivenName",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create",
+            "Update"
+          ],
+          "MappingMode": "Field",
+          "Value": "\"Person.Name.NickName\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
+        }
+      ]
+    },
+    {
+      "Name": "Password",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create"
+          ],
+          "MappingMode": "Complex",
+          "Value": "\"function generatePassword(){\\r\\n     \\r\\n    // Initialize these variables for the algorithm to meet your password complexity rules\\r\\n    const passwordLength = 12;\\r\\n    const minUpper = 1;\\r\\n    const maxUpper = 3;\\r\\n    const minNumeric = 0;\\r\\n    const maxNumeric = 2;\\r\\n    const minSpecial = 1;\\r\\n    const maxSpecial = 1;\\r\\n     \\r\\n     \\r\\n    // Do not change any code below this line !!!\\r\\n     \\r\\n    const numberUpper = Math.floor((Math.random() * maxUpper) + minUpper);\\r\\n    const numberNumeric = Math.floor((Math.random() * maxNumeric) + minNumeric);\\r\\n    const numberSpecial = Math.floor((Math.random() * maxSpecial) + minSpecial);\\r\\n    const numberLower = passwordLength - (numberUpper + numberNumeric + numberSpecial);\\r\\n                 \\r\\n    let upperChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';\\r\\n    let lowerChars = 'abcdefghijklmnopqrstuvwxyz';\\r\\n    let numberChars = '0123456789';\\r\\n    let specialChars = '!#$@*?';\\r\\n     \\r\\n    let getRandomValue = function(values) {\\r\\n        return values.charAt(Math.floor(Math.random() * values.length));\\r\\n    };\\r\\n     \\r\\n    let password = [];\\r\\n    for(let i = 0; i < numberNumeric; ++i) { password.push(getRandomValue(numberChars)) }\\r\\n    for(let i = 0; i < numberUpper; ++i) { password.push(getRandomValue(upperChars)) }\\r\\n    for(let i = 0; i < numberSpecial; ++i) { password.push(getRandomValue(specialChars)) }   \\r\\n    for(let i = 0; i < numberLower; ++i) { password.push(getRandomValue(lowerChars)) }\\r\\n         \\r\\n    function randomizeCharSequence(passwordObject){\\r\\n        for(let j, x, i = passwordObject.length; i; j = Math.floor(Math.random() * i), x = passwordObject[--i], passwordObject[i] = passwordObject[j], passwordObject[j] = x);\\r\\n        return passwordObject;\\r\\n    }\\r\\n     \\r\\n    return randomizeCharSequence(password).join('');\\r\\n}\\r\\ngeneratePassword();\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
+        }
+      ]
+    },
+    {
+      "Name": "BigNumber",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Update",
+            "Create"
+          ],
+          "MappingMode": "None",
+          "Value": "\"\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
+        }
+      ]
+    },
+    {
+      "Name": "Initials",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create",
+            "Update"
+          ],
+          "MappingMode": "Field",
+          "Value": "\"Person.Name.Initials\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
+        }
+      ]
+    },
+    {
+      "Name": "EmployeeNumber",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create",
+            "Update"
+          ],
+          "MappingMode": "Field",
+          "Value": "\"Person.ExternalId\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
+        }
+      ]
+    },
+    {
+      "Name": "MobilePhone",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create",
+            "Update"
+          ],
+          "MappingMode": "Field",
+          "Value": "\"Person.Contact.Business.Phone.Mobile\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
+        }
+      ]
+    },
+    {
+      "Name": "WorkPhone",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create",
+            "Update"
+          ],
+          "MappingMode": "Field",
+          "Value": "\"Person.Contact.Business.Phone.Fixed\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
+        }
+      ]
+    },
+    {
+      "Name": "Discipline",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create",
+            "Update"
+          ],
+          "MappingMode": "None",
+          "Value": "\"\"",
+          "UsedInNotifications": true,
+          "StoreInAccountData": true
+        }
+      ]
+    },
+    {
+      "Name": "UserName",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create",
+            "Update",
+            "Delete"
+          ],
+          "MappingMode": "Complex",
+          "Value": "\"// Please enter the mapping logic to generate the sAMAccountName.\\r\\nfunction userName() {\\r\\n    \\r\\n\\treturn Person.Accounts._bccd667807a9431a9d4acfc64c19a3d6.userPrincipalName;\\r\\n}\\r\\nuserName();\"",
+          "UsedInNotifications": true,
+          "StoreInAccountData": false
+        }
+      ]
+    },
+    {
+      "Name": "Position",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create",
+            "Update"
+          ],
+          "MappingMode": "Field",
+          "Value": "\"Person.PrimaryContract.Title.Name\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
+        }
+      ]
+    },
+    {
+      "Name": "YsisInitials",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create",
+            "Delete"
+          ],
+          "MappingMode": "Complex",
+          "Value": "\"// Please enter the mapping logic to generate the sAMAccountName.\\r\\nfunction ysisInitials() {\\r\\n\\tlet firstName = Person.Name.NickName;\\r\\n\\tlet lastName = Person.Name.FamilyName;\\r\\n    let ysisInitials = firstName.trim().padEnd(2,'X').substring(0,2) + lastName.trim().padEnd(3,'X').substring(0,3);\\r\\n    \\r\\n    //Remove diacritical chars\\r\\n\\tysisInitials = deleteDiacriticalMarks(ysisInitials); \\r\\n    return ysisInitials.toUpperCase();\\r\\n}\\r\\nysisInitials();\"",
+          "UsedInNotifications": true,
+          "StoreInAccountData": true
+        },
+        {
+          "MapForActions": [
+            "Update"
+          ],
+          "MappingMode": "None",
+          "Value": "\"\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": true
+        }
+      ]
+    },
+    {
+      "Name": "AgbCode",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create",
+            "Update"
+          ],
+          "MappingMode": "None",
+          "Value": "\"\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
+        }
+      ]
+    },
+    {
+      "Name": "Infix",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create",
+            "Update"
+          ],
+          "MappingMode": "Complex",
+          "Value": "\"function generateMiddleName() {\\r\\n \\r\\n \\r\\n    let middleName = Person.Name.FamilyNamePrefix;\\r\\n    let middleNamePartner = Person.Name.FamilyNamePartnerPrefix;\\r\\n    \\r\\n    let nameFormatted = \\\"\\\";\\r\\n \\r\\n    switch(Person.Name.Convention) {\\r\\n    case \\\"B\\\":\\r\\n    case \\\"BP\\\":\\r\\n        if (typeof middleName !== 'undefined' && middleName) { nameFormatted = middleName }\\r\\n        break;\\r\\n    case \\\"P\\\":\\r\\n    case \\\"PB\\\":\\r\\n        if (typeof middleNamePartner !== 'undefined' && middleNamePartner) { nameFormatted = middleNamePartner  }\\r\\n        break;    \\r\\n    default:\\r\\n        if (typeof middleName !== 'undefined' && middleName) { nameFormatted = middleName  }\\r\\n        break;\\r\\n    }\\r\\n    nameFormatted = nameFormatted.trim();\\r\\n \\r\\nreturn nameFormatted;\\r\\n}\\r\\ngenerateMiddleName()\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
+        }
+      ]
+    },
+    {
+      "Name": "FamilyName",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create",
+            "Update"
+          ],
+          "MappingMode": "Complex",
+          "Value": "\"function generateLastName() {\\r\\n \\r\\n \\r\\n    let middleName = Person.Name.FamilyNamePrefix;\\r\\n    let lastName = Person.Name.FamilyName;\\r\\n    let middleNamePartner = Person.Name.FamilyNamePartnerPrefix;\\r\\n    let lastNamePartner = Person.Name.FamilyNamePartner;\\r\\n \\r\\n    let nameFormatted = \\\"\\\";\\r\\n \\r\\n    switch(Person.Name.Convention) {\\r\\n    case \\\"B\\\":        \\r\\n        nameFormatted = lastName;\\r\\n        break;\\r\\n    case \\\"P\\\":\\r\\n        nameFormatted = lastNamePartner;\\r\\n        break;\\r\\n    case \\\"BP\\\":        \\r\\n        nameFormatted = lastName + ' - ';\\r\\n        if (typeof middleNamePartner !== 'undefined' && middleNamePartner) { nameFormatted = nameFormatted + middleNamePartner + ' ' }\\r\\n        nameFormatted = nameFormatted + lastNamePartner;\\r\\n        break;\\r\\n    case \\\"PB\\\":        \\r\\n        nameFormatted = lastNamePartner + ' - ';\\r\\n        if (typeof middleName !== 'undefined' && middleName) { nameFormatted = nameFormatted + middleName + ' ' }\\r\\n        nameFormatted = nameFormatted + lastName;\\r\\n        break;\\r\\n    default:        \\r\\n        nameFormatted = lastName;\\r\\n        break;\\r\\n    }\\r\\n    nameFormatted = nameFormatted.trim();\\r\\n \\r\\nreturn nameFormatted;\\r\\n}\\r\\ngenerateLastName()\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
+        }
+      ]
+    }
+  ],
+  "UniqueFieldNames": []
+}
