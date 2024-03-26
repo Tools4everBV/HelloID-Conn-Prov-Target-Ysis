@@ -201,7 +201,7 @@ try {
             initials     = $account.Initials
             bigNumber    = $account.BigNumber
             position     = $account.Position
-            modules      = @('YSIS_CORE')        
+            modules      = @($config.DefaultModule)
         }
         "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User" = [PSCustomObject]@{
             employeeNumber = $account.EmployeeNumber

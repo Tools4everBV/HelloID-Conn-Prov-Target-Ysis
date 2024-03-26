@@ -32,6 +32,17 @@
     }
   },
   {
+    "key": "DefaultModule",
+    "type": "input",
+    "defaultValue": "",
+    "templateOptions": {
+      "placeholder": "YSIS_CORE",
+      "label": "Default Module (code)",
+      "description": "The default module code. (YSIS_CORE)",
+      "required": true
+    }
+  },
+  {
     "key": "MappingFile",
     "type": "input",
     "defaultValue": "",
