@@ -18,19 +18,21 @@
 ## Table of contents
 
 - [HelloID-Conn-Prov-Target-YsisV2](#helloid-conn-prov-target-ysisv2)
+- [| This connector replaces the current Ysis connector.  |](#-this-connector-replaces-the-current-ysis-connector--)
   - [Table of contents](#table-of-contents)
   - [Introduction](#introduction)
-  - [Getting started](#getting-started)
+  - [Introduction](#introduction-1)
+  - [Getting Started](#getting-started)
     - [Prerequisites](#prerequisites)
     - [Connection settings](#connection-settings)
     - [Remarks](#remarks)
       - [`PUT` method for all update actions](#put-method-for-all-update-actions)
       - [Full update within the _update_ lifecycle action](#full-update-within-the-update-lifecycle-action)
       - [Discipline and the Ysis-initals are stored in `$aRef`](#discipline-and-the-ysis-initals-are-stored-in-aref)
-      - [Archiving an Ysis account](#archiving-an-ysis-account)
-  - [Mapping](#mapping)
-  - [Correlation](#correlation)
-  - [Conditional Event](#conditional-event)
+      - [Archiving an Ysis-account](#archiving-an-ysis-account)
+    - [Mapping](#mapping)
+    - [Correlation](#correlation)
+    - [Conditional Event](#conditional-event)
   - [Getting help](#getting-help)
   - [HelloID Docs](#helloid-docs)
 
@@ -85,13 +87,22 @@ All update actions use an `HTTP.PUT` method. This means that the full account ob
 
 The _update_ lifecycle action now supports a full account update. Albeit, the update itself is a `PUT`. This means that the __full__ object will be updated within Ysis. Since the update process is also supported from the _create_ lifecycle action, this might have unexpected implications.
 
+Some values may not be available in HelloID because they are not available in the HR system. If these values are added manually in Ysis you need to make sure HelloID sends back the current value in the update.ps1 script. Example:
+
+```powershell
+# Set AGB to existing if null or empty
+if (!([string]::IsNullOrEmpty($previousAccount.AgbCode)) -and [string]::IsNullOrEmpty($account.AgbCode)) {
+    $account.AgbCode = $previousAccount.AgbCode
+}
+```
+
 #### Discipline and the Ysis-initals are stored in `$aRef`
 
 When HelloID has created the Ysis account, the _discipline_ will be stored in the account reference. That makes it possible to, within the update lifecycle action, verify if the _discipline_ has changed. Whenever a change has been detected, an email will be send indicating that that a new account must be created or the existing one must be updated. The _discipline_ will also be included in this email.
 
 #### Archiving an Ysis-account
 
-HelloID can archive an Ysis account, but can't dearchive an Ysis account. This can result in messages regarding existing usernames. The archived account than needs to be dearchived manually or corrected by setting a dummy username.
+HelloID can archive a Ysis account, but can't dearchive an Ysis account. HelloID will update the Ysis username to the YsisIntials to make sure a new account can be created. If updating the username is not used. Then this can result in messages regarding existing usernames. The archived account then needs to be dearchived manually or corrected by setting a dummy username.
 
 ### Mapping
 The mandatory and recommended field mapping is listed below. Some fields are required by Ysis and are set on creating an account. When an update is triggered, the required/immutable fields are set to the existing values from the existing user.
