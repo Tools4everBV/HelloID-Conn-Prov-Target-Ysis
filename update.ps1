@@ -110,17 +110,22 @@ try {
     }
 
     # Primary Contract Calculation foreach employment
-    $firstProperty = @{ Expression = { $_.Details.Fte } ; Descending = $true }
+    $firstProperty = @{ Expression = { $_.Details.Fte }; Descending = $true }
     $secondProperty = @{ Expression = { $_.Details.HoursPerWeek }; Descending = $true }
-    # $thirdProperty =  @{ Expression = { $_.Details.Percentage };      Descending = $false }
+    $thirdProperty = @{ Expression = { $_.Details.Sequence }; Descending = $true }
+    $fourthProperty = @{ Expression = { $_.EndDate }; Descending = $true }
+    $fifthProperty = @{ Expression = { $_.StartDate }; Descending = $false }
+    $sixthProperty = @{ Expression = { $_.ExternalId }; Descending = $false }
 
-    #Priority Calculation Order (High priority -> Low priority)
+    # Priority Calculation Order (High priority -> Low priority)
     $splatSortObject = @{
         Property = @(
             $firstProperty,
-            $secondProperty
-            #etc..
-        )
+            $secondProperty,
+            $thirdProperty,
+            $fourthProperty,
+            $fifthProperty,
+            $sixthProperty)
     }
 
     $contracts = $personContext.Person.Contracts
