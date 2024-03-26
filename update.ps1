@@ -1,8 +1,8 @@
-########################################
+#################################################
 # HelloID-Conn-Prov-Target-YsisV2-Update
-#
-# Version: 2.0.0
-########################################
+# PowerShell V2
+#################################################
+
 # Initialize default values
 $config = $actionContext.Configuration
 $outputContext.success = $false

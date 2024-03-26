@@ -1,8 +1,8 @@
-########################################
+#################################################
 # HelloID-Conn-Prov-Target-YsisV2-Enable
-#
-# Version: 2.0.1
-########################################
+# PowerShell V2
+#################################################
+
 # Initialize default values
 $config = $actionContext.Configuration
 $p = $personContext.Person
