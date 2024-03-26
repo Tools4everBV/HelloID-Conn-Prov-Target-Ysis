@@ -227,8 +227,8 @@ try {
                 value = $account.MobilePhone
             }
         )
-        roles                                                        = $currentAccount.roles
-        entitlements                                                 = $currentAccount.entitlements
+        roles                                                        = @()
+        entitlements                                                 = @()
         'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'       = [PSCustomObject]@{
             ysisInitials = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials
             discipline   = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline
