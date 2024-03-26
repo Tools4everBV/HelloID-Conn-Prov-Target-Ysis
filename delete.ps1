@@ -115,20 +115,21 @@ try {
         }
 
         if (-Not($actionContext.DryRun -eq $true)) {
-            # Update Username before "archive"  
-            Write-Verbose "Updating YsisV2 account with accountReference: [$($actionContext.References.Account)]"
-            $responseUser.userName = $responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials
-            $splatParams = @{
-                Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
-                Headers     = $headers
-                Method      = 'PUT'
-                Body        = $responseUser | ConvertTo-Json
-                ContentType = 'application/scim+json'
+            if ($config.updateUsernameOnDelete -eq $true) {
+                # Optioanl update Username before "archive"  
+                Write-Verbose "Updating YsisV2 account with accountReference: [$($actionContext.References.Account)]"
+                $responseUser.userName = $responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials
+                $splatParams = @{
+                    Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
+                    Headers     = $headers
+                    Method      = 'PUT'
+                    Body        = $responseUser | ConvertTo-Json
+                    ContentType = 'application/scim+json'
+                }
+                $null = Invoke-RestMethod @splatParams -Verbose:$false
+
+                Write-Verbose "Username of account [$($p.DisplayName)] with reference [$($actionContext.References.Account)] updated"
             }
-            $null = Invoke-RestMethod @splatParams -Verbose:$false
-
-            Write-Verbose "Username of account [$($p.DisplayName)] with reference [$($actionContext.References.Account)] updated"
-
             Write-Verbose "Deleting YsisV2 account with accountReference: [$($actionContext.References.Account)]"        
             # $responseUser.active = $actionContext.Data.active
             $splatParams = @{
@@ -145,6 +146,7 @@ try {
                 })
         }
     }
+    
 }
 catch {
     $ex = $PSItem
