@@ -63,7 +63,7 @@
     }
   },
   {
-    "key": "updateUsernameOnDelete",
+    "key": "UpdateUsernameOnDelete",
     "type": "checkbox",
     "defaultValue": false,
     "templateOptions": {
