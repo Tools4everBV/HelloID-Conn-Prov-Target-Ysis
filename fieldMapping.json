@@ -11,7 +11,7 @@
             "Update"
           ],
           "MappingMode": "Complex",
-          "Value": "\"//YSIS only accepts one e-mailadress\\r\\nfunction GetMailAddresses(){   \\r\\n\\r\\n    let mail = \\\"\\\"    \\r\\n    \\r\\n    if(typeof Person.Accounts._bccd667807a9431a9d4acfc64c19a3d6.mail !== 'undefined' && Person.Accounts._bccd667807a9431a9d4acfc64c19a3d6.mail) {        \\r\\n        mail = Person.Accounts._bccd667807a9431a9d4acfc64c19a3d6.mail\\r\\n    }   \\r\\n\\r\\n    return mail\\r\\n}\\r\\nGetMailAddresses()\"",
+          "Value": "\"//YSIS only accepts one e-mailadress\\r\\nfunction GetMailAddresses(){   \\r\\n\\r\\n    let mail = \\\"\\\"    \\r\\n    \\r\\n    if(typeof Person.Accounts.MicrosoftActiveDirectory.mail !== 'undefined' && Person.Accounts.MicrosoftActiveDirectory.mail) {        \\r\\n        mail = Person.Accounts.MicrosoftActiveDirectory.mail\\r\\n    }   \\r\\n\\r\\n    return mail\\r\\n}\\r\\nGetMailAddresses()\"",
           "UsedInNotifications": false,
           "StoreInAccountData": false
         }
@@ -171,7 +171,7 @@
             "Delete"
           ],
           "MappingMode": "Complex",
-          "Value": "\"// Please enter the mapping logic to generate the sAMAccountName.\\r\\nfunction userName() {\\r\\n    \\r\\n\\treturn Person.Accounts._bccd667807a9431a9d4acfc64c19a3d6.userPrincipalName;\\r\\n}\\r\\nuserName();\"",
+          "Value": "\"// Please enter the mapping logic to generate the sAMAccountName.\\r\\nfunction userName() {\\r\\n    \\r\\n\\treturn Person.Accounts.MicrosoftActiveDirectory.userPrincipalName;\\r\\n}\\r\\nuserName();\"",
           "UsedInNotifications": true,
           "StoreInAccountData": false
         }
