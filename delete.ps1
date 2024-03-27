@@ -115,7 +115,7 @@ try {
         }
 
         if (-Not($actionContext.DryRun -eq $true)) {
-            if ($config.updateUsernameOnDelete -eq $true) {
+            if ($config.UpdateUsernameOnDelete -eq $true) {
                 # Optioanl update Username before "archive"  
                 Write-Verbose "Updating YsisV2 account with accountReference: [$($actionContext.References.Account)]"
                 $responseUser.userName = $responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials

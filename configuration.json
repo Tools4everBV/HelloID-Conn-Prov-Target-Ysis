@@ -63,13 +63,13 @@
     }
   },
   {
-    "key": "updateUsernameOnDelete",
+    "key": "UpdateUsernameOnDelete",
     "type": "checkbox",
     "defaultValue": false,
     "templateOptions": {
       "label": "Update username when archiving Ysis account",
       "required": false,
-      "description": "Because Ysis accounts cannot be dearchived by HelloID we will update the username to the YSISinitials. This will always result in a unique value so we can reuse the old username for new accounts"
+      "description": "Because Ysis accounts cannot be dearchived by HelloID we will update the username to the YsisInitials. This will always result in a unique value so we can reuse the old username for new accounts"
     }
   },
   {
