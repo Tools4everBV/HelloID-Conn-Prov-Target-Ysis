@@ -1,5 +1,5 @@
 #################################################
-# HelloID-Conn-Prov-Target-YsisV2-Update
+# HelloID-Conn-Prov-Target-Ysis-Update
 # PowerShell V2
 #################################################
 
@@ -19,7 +19,7 @@ switch ($($actionContext.Configuration.isDebug)) {
     $false { $VerbosePreference = 'SilentlyContinue' }
 }
 
-function Resolve-YsisV2Error {
+function Resolve-YsisError {
     param (
         [object]
         $ErrorObject
@@ -83,11 +83,10 @@ try {
     Write-Verbose 'Adding Authorization headers'
     $headers = [System.Collections.Generic.Dictionary[string, string]]::new()
     $headers.Add('Authorization', "Bearer $($responseAccessToken.access_token)")
-    # $headers.Add('Accept', 'application/json')
     $headers.Add('Accept', 'application/json; charset=utf-8')
     $headers.Add('Content-Type', 'application/json')
 
-    Write-Verbose "Verifying if YsisV2 account for [$($person.DisplayName)] exists"
+    Write-Verbose "Verifying if Ysis account for [$($person.DisplayName)] exists"
     try {
         $splatParams = @{
             Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
@@ -100,7 +99,7 @@ try {
         if ($_.Exception.Response.StatusCode -eq 404) {
             $outputContext.AuditLogs.Add([PSCustomObject]@{
                     Action  = "UpdateAccount"
-                    Message = "YsisV2 account for: [$($person.DisplayName)] not found. Possibly deleted"
+                    Message = "Ysis account for: [$($person.DisplayName)] not found. Possibly deleted"
                     IsError = $true
                 })
             throw "Possibly deleted"
@@ -230,12 +229,12 @@ try {
     }
 
     # #if not mapped use current value:
-    # if (-NOT [bool]($account.PSobject.Properties.name -match "agbCode")) {
+    # if (-not [bool]($account.PSobject.Properties.name -match "agbCode")) {
     #     $ysisaccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.agbCode = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.agbCode
     # }
 
     # #if not mapped use current value:
-    # if (-NOT [bool]($account.PSobject.Properties.name -match "bigNumber")) {
+    # if (-not [bool]($account.PSobject.Properties.name -match "bigNumber")) {
     #     $ysisaccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.bigNumber = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.bigNumber
     # }
 
@@ -260,12 +259,12 @@ try {
     }
     $changedProperties = $null
     $changedProperties = (Compare-Object @splatCompareProperties -PassThru)
-    $oldProperties = $changedProperties.Where( { $_.SideIndicator -eq '<=' })
+    #$oldProperties = $changedProperties.Where( { $_.SideIndicator -eq '<=' }) # not used in script
     $newProperties = $changedProperties.Where( { $_.SideIndicator -eq '=>' })
 
     if (($newProperties | Measure-Object).Count -ge 1) {
 
-        Write-Verbose "Updating YsisV2 account with accountReference: [$($actionContext.References.Account)]"
+        Write-Verbose "Updating Ysis account with accountReference: [$($actionContext.References.Account)]"
         $splatUpdateUserParams = @{
             Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
             Headers     = $headers
@@ -281,15 +280,15 @@ try {
         }
 
         $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "UpdateAccount" # Optionally specify a different action for this audit log
+                Action  = "UpdateAccount"
                 Message = "Account with username $($account.userName) updated"
                 IsError = $false
             })
     }
     else {
-        Write-Verbose "No Updates for YsisV2 account with accountReference: [$($actionContext.References.Account)]"
+        Write-Verbose "No Updates for Ysis account with accountReference: [$($actionContext.References.Account)]"
         $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "UpdateAccount" # Optionally specify a different action for this audit log
+                Action  = "UpdateAccount"
                 Message = "Account with username $($account.userName) has no updates"
                 IsError = $false
             })
@@ -299,16 +298,16 @@ catch {
     $ex = $PSItem
     if (-Not($ex.Exception.Message -eq 'Possibly deleted')) {
         if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
-            $errorObj = Resolve-YsisV2Error -ErrorObject $ex
-            $auditMessage = "Could not update YsisV2 account. Error: $($errorObj.FriendlyMessage)"
+            $errorObj = Resolve-YsisError -ErrorObject $ex
+            $auditMessage = "Could not update Ysis account. Error: $($errorObj.FriendlyMessage)"
             Write-Verbose "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
         }
         else {
-            $auditMessage = "Could not update YsisV2 account. Error: $($ex.Exception.Message)"
+            $auditMessage = "Could not update Ysis account. Error: $($ex.Exception.Message)"
             Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
         }
         $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "UpdateAccount" # Optionally specify a different action for this audit log
+                Action  = "UpdateAccount"
                 Message = $auditMessage
                 IsError = $true
             })
@@ -319,6 +318,7 @@ finally {
     if (-not($outputContext.AuditLogs.IsError -contains $true)) {
         $outputContext.Success = $true
     }
+
     # add ID to export data
     $account | Add-Member -MemberType NoteProperty -Name id -Value $actionContext.References.Account -Force
     $outputContext.Data = $account

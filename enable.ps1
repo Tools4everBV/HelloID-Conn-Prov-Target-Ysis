@@ -1,5 +1,5 @@
 #################################################
-# HelloID-Conn-Prov-Target-YsisV2-Enable
+# HelloID-Conn-Prov-Target-Ysis-Enable
 # PowerShell V2
 #################################################
 
@@ -18,7 +18,7 @@ switch ($($actionContext.Configuration.isDebug)) {
 }
 
 #region functions
-function Resolve-YsisV2Error {
+function Resolve-YsisError {
     param (
         [object]
         $ErrorObject
@@ -82,7 +82,7 @@ try {
     $headers.Add('Accept', 'application/json')
     $headers.Add('Content-Type', 'application/json')
 
-    Write-Verbose "Verifying if YsisV2 account for [$($p.DisplayName)] exists"
+    Write-Verbose "Verifying if Ysis account for [$($p.DisplayName)] exists"
     try {
         $splatParams = @{
             Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
@@ -95,7 +95,7 @@ try {
         if ($_.Exception.Response.StatusCode -eq 404) {
             $outputContext.AuditLogs.Add([PSCustomObject]@{
                     Action  = "EnableAccount" # Optionally specify a different action for this audit log
-                    Message = "YsisV2 account for: [$($p.DisplayName)] not found. Possibly deleted"
+                    Message = "Ysis account for: [$($p.DisplayName)] not found. Possibly deleted"
                     IsError = $true
                 })
             throw "Possibly deleted"
@@ -113,7 +113,7 @@ try {
 
     if (-Not($actionContext.DryRun -eq $true)) {
         # Write enable logic here    
-        Write-Verbose "Enabling YsisV2 account with accountReference: [$($actionContext.References.Account)]"
+        Write-Verbose "Enabling Ysis account with accountReference: [$($actionContext.References.Account)]"
         $responseUser.active = $true
         $splatParams = @{
             Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
@@ -135,12 +135,12 @@ catch {
     $ex = $PSItem
     if (-Not($ex.Exception.Message -eq 'Possibly deleted')) {
         if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
-            $errorObj = Resolve-YsisV2Error -ErrorObject $ex
-            $auditMessage = "Could not enable YsisV2 account. Error: $($errorObj.FriendlyMessage)"
+            $errorObj = Resolve-YsisError -ErrorObject $ex
+            $auditMessage = "Could not enable Ysis account. Error: $($errorObj.FriendlyMessage)"
             Write-Verbose "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
         }
         else {
-            $auditMessage = "Could not enable YsisV2 account. Error: $($ex.Exception.Message)"
+            $auditMessage = "Could not enable Ysis account. Error: $($ex.Exception.Message)"
             Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
         }
         $outputContext.AuditLogs.Add([PSCustomObject]@{

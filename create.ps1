@@ -1,7 +1,8 @@
 ########################################
-# HelloID-Conn-Prov-Target-YsisV2-Create
-#
+# HelloID-Conn-Prov-Target-Ysis-Create
+# PowerShell V2
 ########################################
+
 # Initialize default values
 $config = $actionContext.Configuration
 $outputContext.success = $false
@@ -42,7 +43,7 @@ function Set-YsisInitials-Iteration {
         }
         catch {
             $outputContext.AuditLogs.Add([PSCustomObject]@{
-                    Action  = "CreateAccount" # Optionally specify a different action for this audit log
+                    Action  = "CreateAccount"
                     Message = "An error was found in the ysisinitials iteration algorithm: $($_.Exception.Message): $($_.ScriptStackTrace)"
                     IsError = $true
                 })
@@ -50,7 +51,7 @@ function Set-YsisInitials-Iteration {
     }
 }
 
-function Resolve-YsisV2Error {
+function Resolve-YsisError {
     param (
         [object]
         $ErrorObject
@@ -82,33 +83,6 @@ function Resolve-YsisV2Error {
     }
     Write-Output $httpErrorObj
 }
-
-function Get-AccountRoleByMapping {
-    [cmdletbinding()]
-    Param (
-        [Parameter(Mandatory)][object]$SearchValue
-    )    
-
-    # Set Role
-    $splatRoleParams = @{
-        Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/roles"
-        Method      = 'GET'
-        Headers     = $headers
-        ContentType = 'application/json'
-    }
-
-    try{
-        $roles = Invoke-RestMethod @splatRoleParams -Verbose:$true
-    }catch{
-        Write-Warning "$($_)"
-        throw "Failed retrieving roles - $($_)"
-    }
-
-
-    $role = $roles | Where-Object displayName -eq $SearchValue
-    return $role
-
-}
 #endregion functions
 
 try {    
@@ -124,12 +98,12 @@ try {
     }
 
     # Primary Contract Calculation foreach employment
-    $firstProperty =  @{ Expression = { $_.Details.Fte };             Descending = $true  }
-    $secondProperty = @{ Expression = { $_.Details.HoursPerWeek };    Descending = $true  }
-    $thirdProperty =  @{ Expression = { $_.Details.Sequence };        Descending = $true  }
-    $fourthProperty = @{ Expression = { $_.EndDate };                 Descending = $true  }
-    $fifthProperty =  @{ Expression = { $_.StartDate };               Descending = $false }
-    $sixthProperty =  @{ Expression = { $_.ExternalId };              Descending = $false }
+    $firstProperty = @{ Expression = { $_.Details.Fte }; Descending = $true }
+    $secondProperty = @{ Expression = { $_.Details.HoursPerWeek }; Descending = $true }
+    $thirdProperty = @{ Expression = { $_.Details.Sequence }; Descending = $true }
+    $fourthProperty = @{ Expression = { $_.EndDate }; Descending = $true }
+    $fifthProperty = @{ Expression = { $_.StartDate }; Descending = $false }
+    $sixthProperty = @{ Expression = { $_.ExternalId }; Descending = $false }
 
     # Priority Calculation Order (High priority -> Low priority)
     $splatSortObject = @{
@@ -217,7 +191,7 @@ try {
             Write-Warning "Correlation is enabled but not configured correctly."
         }
 
-       # Requesting authorization token
+        # Requesting authorization token
         $splatRequestToken = @{
             Uri    = "$($config.BaseUrl)/cas/oauth/token"
             Method = 'POST'
@@ -236,7 +210,7 @@ try {
             write-error "$($_)"
             $ex = $PSItem
             if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
-                $errorObj = Resolve-YsisV2Error -ErrorObject $ex
+                $errorObj = Resolve-YsisError -ErrorObject $ex
                 $auditMessage = "Could not retrieve Ysis Token. Error: $($errorObj.FriendlyMessage)"
                 Write-Verbose "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
             }
@@ -245,10 +219,10 @@ try {
                 Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
             }
             $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "CreateAccount" # Optionally specify a different action for this audit log
-                Message = $auditMessage
-                IsError = $false
-            })
+                    Action  = "CreateAccount"
+                    Message = $auditMessage
+                    IsError = $false
+                })
             throw "Token error"
         }
         
@@ -259,7 +233,7 @@ try {
         $headers.Add('Content-Type', 'application/json')
 
         # Verify if a user must be either [created and correlated], [updated and correlated] or just [correlated]
-        Write-Verbose "Verifying if YsisV2 account for [$($person.DisplayName) - (correlationValue:$correlationValue)] exists"        
+        Write-Verbose "Verifying if Ysis account for [$($person.DisplayName) - (correlationValue:$correlationValue)] exists"        
         $encodedString = [System.Uri]::EscapeDataString($correlationValue)
     
         $splatParams = @{
@@ -288,7 +262,7 @@ try {
             $outputContext.AccountReference = $correlatedAccount.id       
 
             $outputContext.AuditLogs.Add([PSCustomObject]@{
-                    Action  = "CorrelateAccount" # Optionally specify a different action for this audit log
+                    Action  = "CorrelateAccount"
                     Message = "Correlated account with username $($correlatedAccount.UserName) on field $($correlationField) with value $($correlationValue)"
                     IsError = $false
                 })
@@ -346,114 +320,96 @@ try {
             # }
             # $Ysisaccount.roles += $role
 
-            # Write create logic here
+            # Namegen configuration
             $maxIterations = 5
             $Iterator = 0
             $uniqueness = $false
             
-            try {
-                do {
-                    # Add initials to the account object.
-                    $ysisAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials = Set-YsisInitials-Iteration -YsisInitials $($account.ysisInitials) -Iteration $Iterator
-                      
-                    try {
-                        $splatCreateUserParams = @{
-                            Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users"
-                            Headers     = $headers
-                            Method      = 'POST'
-                            Body        = $ysisAccount | ConvertTo-Json
-                            ContentType = 'application/scim+json;charset=UTF-8'
-                        }
-                      
-                        if (-Not($actionContext.DryRun -eq $true)) {          
-                            $responseCreateUser = Invoke-RestMethod @splatCreateUserParams -Verbose:$false
-                        }
-                        else {
-                            Write-Warning "will send: $($splatCreateUserParams.Body)"
-                        }
-                        $uniqueness = $true
+
+            do {
+                # Add initials to the account object.
+                $ysisAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials = Set-YsisInitials-Iteration -YsisInitials $($account.ysisInitials) -Iteration $Iterator
                     
-                        $outputContext.AccountReference = $responseCreateUser.id
-
-                        $outputContext.AuditLogs.Add([PSCustomObject]@{
-                                Action  = "CreateAccount" # Optionally specify a different action for this audit log
-                                Message = "Created account with username $($account.UserName)"
-                                IsError = $false
-                            })
-
+                try {
+                    $splatCreateUserParams = @{
+                        Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users"
+                        Headers     = $headers
+                        Method      = 'POST'
+                        Body        = $ysisAccount | ConvertTo-Json
+                        ContentType = 'application/scim+json;charset=UTF-8'
                     }
-                    catch {             
-                        $ex = $PSItem          
-                        $errorObj = Resolve-YsisV2Error -ErrorObject $ex 
-                        Write-Warning "$Iterator : $($_.Exception.Response.StatusCode) - $($errorObj.FriendlyMessage)"
+                    
+                    if (-Not($actionContext.DryRun -eq $true)) {          
+                        $responseCreateUser = Invoke-RestMethod @splatCreateUserParams -Verbose:$false
+                    }
+                    else {
+                        Write-Warning "will send: $($splatCreateUserParams.Body)"
+                    }
+                    $uniqueness = $true
+                
+                    $outputContext.AccountReference = $responseCreateUser.id
 
-                        if ($_.Exception.Response.StatusCode -eq 'Conflict' -and $($errorObj.FriendlyMessage) -match "A user with the 'ysisInitials'") {                        
-                            $Iterator++
-                            Write-Warning "YSIS-Initials in use, trying with [$($account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)]."                            
-                        }
-                        else {
-                            throw $_                            
-                        }
+                    $outputContext.AuditLogs.Add([PSCustomObject]@{
+                            Action  = "CreateAccount" # Optionally specify a different action for this audit log
+                            Message = "Created account with username $($account.UserName)"
+                            IsError = $false
+                        })
+
+                }
+                catch {             
+                    $ex = $PSItem          
+                    $errorObj = Resolve-YsisError -ErrorObject $ex 
+                    Write-Warning "$Iterator : $($_.Exception.Response.StatusCode) - $($errorObj.FriendlyMessage)"
+
+                    if ($_.Exception.Response.StatusCode -eq 'Conflict' -and $($errorObj.FriendlyMessage) -match "A user with the 'ysisInitials'") {                        
+                        $Iterator++
+                        Write-Warning "YSIS-Initials in use, trying with [$($account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)]."                            
                     }
-                } while ($uniqueness -ne $true -and $Iterator -lt $maxIterations)
-                if (!($uniqueness -eq $true)) {
-                    throw "A user with the 'ysisInitials' '$($account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)' already exists. YSIS-Initials out of iterations!"                      
-                    # versie van Remco: throw "A user with the 'ysisInitials' '$($account.ysisInitials)' already exists. YSIS-Initials out of iterations!"  
-                    if ($actionContext.DryRun -eq $true) {
-            
-                        Write-Warning "Account with username [$($account.UserName)] and discipline [$($mappedObject.Discipline)] will be created."
-                        $outputContext.AuditLogs.Add([PSCustomObject]@{
-                                Action  = "CreateAccount" # Optionally specify a different action for this audit log
-                                Message = "Account with username [$($account.UserName)] and discipline [$($mappedObject.Discipline)] will be created."
-                                IsError = $false
-                            })
+                    else {
+                        throw $_                            
                     }
+                }
+            } while ($uniqueness -ne $true -and $Iterator -lt $maxIterations)
+            if (!($uniqueness -eq $true)) {
+                throw "A user with the 'ysisInitials' '$($account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)' already exists. YSIS-Initials out of iterations!"                      
+                # versie van Remco: throw "A user with the 'ysisInitials' '$($account.ysisInitials)' already exists. YSIS-Initials out of iterations!"  
+                if ($actionContext.DryRun -eq $true) {
         
-                    # add ID to export data
-                    $account | Add-Member -MemberType NoteProperty -Name id -Value $responseCreateUser.id -Force
-                    # $outputContext.Data = $account 
+                    Write-Warning "Account with username [$($account.UserName)] and discipline [$($mappedObject.Discipline)] will be created."
+                    $outputContext.AuditLogs.Add([PSCustomObject]@{
+                            Action  = "CreateAccount" # Optionally specify a different action for this audit log
+                            Message = "Account with username [$($account.UserName)] and discipline [$($mappedObject.Discipline)] will be created."
+                            IsError = $false
+                        })
                 }
+    
+                # add ID to export data
+                $account | Add-Member -MemberType NoteProperty -Name id -Value $responseCreateUser.id -Force
+                # $outputContext.Data = $account 
             }
-            catch {
-                $ex = $PSItem
-                if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
-                    $errorObj = Resolve-YsisV2Error -ErrorObject $ex
-                    $auditMessage = "Could not create YsisV2 account. Error: $($errorObj.FriendlyMessage)"
-                    Write-Verbose "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
-                }
-                else {
-                    $auditMessage = "Could not create YsisV2 account. Error: $($ex.Exception.Message)"
-                    Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
-                }
-                $outputContext.AuditLogs.Add([PSCustomObject]@{
-                        Action  = "CreateAccount" # Optionally specify a different action for this audit log
-                        Message = $auditMessage
-                        IsError = $true
-                    })
-            }        
-            
-            if ($actionContext.DryRun -eq $true) {
-                $outputContext.AccountReference = "DRYRUN"
-                Write-Warning "Account with username [$($account.UserName)] and discipline [$($mappedObject.Discipline)] will be created."
-            }
-
         }
+        
+        if ($actionContext.DryRun -eq $true) {
+            $outputContext.AccountReference = "DRYRUN"
+            Write-Warning "Account with username [$($account.UserName)] and discipline [$($mappedObject.Discipline)] will be created."
+        }
+
     }
 }
 catch {
-   $ex = $PSItem
-    if (-Not($ex.Exception.Message -eq 'Possibly deleted')) {
+    $ex = $PSItem
+    if (-Not($ex.Exception.Message -eq 'Token error')) {
         if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
-            $errorObj = Resolve-YsisV2Error -ErrorObject $ex
-            $auditMessage = "Could not update YsisV2 account. Error: $($errorObj.FriendlyMessage)"
+            $errorObj = Resolve-YsisError -ErrorObject $ex
+            $auditMessage = "Could not create Ysis account. Error: $($errorObj.FriendlyMessage)"
             Write-Verbose "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
         }
         else {
-            $auditMessage = "Could not update YsisV2 account. Error: $($ex.Exception.Message)"
+            $auditMessage = "Could not create Ysis account. Error: $($ex.Exception.Message)"
             Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
         }
         $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "UpdateAccount" # Optionally specify a different action for this audit log
+                Action  = "CreateAccount" # Optionally specify a different action for this audit log
                 Message = $auditMessage
                 IsError = $true
             })
@@ -465,5 +421,5 @@ finally {
         $outputContext.Success = $true
     }
 
-    $outputContext.Data = $account 
+    $outputContext.Data = $account
 }

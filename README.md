@@ -1,4 +1,4 @@
-# HelloID-Conn-Prov-Target-YsisV2
+# HelloID-Conn-Prov-Target-Ysis
 
 > [!IMPORTANT]
 > This repository contains the connector and configuration code only. The implementer is responsible to acquire the connection details such as username, password, certificate, etc. You might even need to sign a contract or agreement with the supplier before implementing this connector. Please contact the client's application manager to coordinate the connector requirements.
@@ -9,7 +9,7 @@
 
 ## Table of contents
 
-- [HelloID-Conn-Prov-Target-YsisV2](#helloid-conn-prov-target-ysisv2)
+- [HelloID-Conn-Prov-Target-Ysis](#helloid-conn-prov-target-Ysis)
   - [Table of contents](#table-of-contents)
   - [Introduction](#introduction)
   - [Getting Started](#getting-started)
@@ -27,7 +27,7 @@
 
 ## Introduction
 
-The HelloID-Conn-Prov-Target-YsisV2 connector creates and updates user accounts within Ysis. The Ysis API is a SCIM based (http://www.simplecloud.info) API and has some limitations for our provisioning process. For more information you can check the Ysis SCIM documentation (https://apihelp.gerimedica.nl/category/scim/).
+The HelloID-Conn-Prov-Target-Ysis connector creates and updates user accounts within Ysis. The Ysis API is a SCIM based (http://www.simplecloud.info) API and has some limitations for our provisioning process. For more information you can check the Ysis SCIM documentation (https://apihelp.gerimedica.nl/category/scim/).
 
 > [!IMPORTANT]
 > It is not possible to change the discipline of an existing account. Therefore, during the `update` life-cycle a change in discipline will launch a conditional event which sends an email to the Ysis administrator.
@@ -79,7 +79,7 @@ The following settings are required to connect to the API.
 
 #### Correlation configuration
 
-The correlation configuration is used to specify which properties will be used to match an existing account within _HelloID-Conn-Prov-Target-YsisV2 to a person in _HelloID_.
+The correlation configuration is used to specify which properties will be used to match an existing account within _HelloID-Conn-Prov-Target-Ysis to a person in _HelloID_.
 
 To properly setup the correlation:
 

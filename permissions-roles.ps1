@@ -1,5 +1,5 @@
 ########################################
-# HelloID-Conn-Prov-Target-YsisV2-Permissions-Roles
+# HelloID-Conn-Prov-Target-Ysis-Permissions-Roles
 # PowerShell V2
 ########################################
 
@@ -17,7 +17,7 @@ switch ($($actionContext.Configuration.isDebug)) {
 }
 
 
-function Resolve-YsisV2Error {
+function Resolve-YsisError {
     param (
         [object]
         $ErrorObject
@@ -80,34 +80,18 @@ function Get-AccountRoles {
 
 try {    
     # Requesting authorization token
-    try {
-        $splatRequestToken = @{
-            Uri    = "$($config.BaseUrl)/cas/oauth/token"
-            Method = 'POST'
-            Body   = @{
-                client_id     = $($config.ClientID)
-                client_secret = $($config.ClientSecret)
-                scope         = 'scim'
-                grant_type    = 'client_credentials'
-            }
+    $splatRequestToken = @{
+        Uri    = "$($config.BaseUrl)/cas/oauth/token"
+        Method = 'POST'
+        Body   = @{
+            client_id     = $($config.ClientID)
+            client_secret = $($config.ClientSecret)
+            scope         = 'scim'
+            grant_type    = 'client_credentials'
         }
+    }
 
-        $responseAccessToken = Invoke-RestMethod @splatRequestToken -Verbose:$false
-    }
-    catch {
-        write-error "$($_)"
-        $ex = $PSItem
-        if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
-            $errorObj = Resolve-YsisV2Error -ErrorObject $ex
-            $auditMessage = "Could not retrieve Ysis Token. Error: $($errorObj.FriendlyMessage)"
-            Write-Verbose "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
-        }
-        else {
-            $auditMessage = "Could not retrieve Ysis Token. Error: $($ex.Exception.Message)"
-            Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
-        }
-        throw "$auditMessage"
-    }
+    $responseAccessToken = Invoke-RestMethod @splatRequestToken -Verbose:$false
 
     $roles = Get-AccountRoles | Sort-Object -Property displayName
 
@@ -116,7 +100,8 @@ try {
             @{
                 DisplayName    = "Role: $($r.displayName)"
                 Identification = @{
-                    Id = $r.value
+                    Reference = $r.value
+                    DisplayName = "Role: $($r.displayName)"
                 }
             }
         )
@@ -124,15 +109,11 @@ try {
 }
 catch {
    $ex = $PSItem
-
     if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
-        $errorObj = Resolve-YsisV2Error -ErrorObject $ex
-        $auditMessage = "Could not update YsisV2 account. Error: $($errorObj.FriendlyMessage)"
-        Write-Verbose "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
+        $errorObj = Resolve-YsisError -ErrorObject $ex
+        Write-Warning "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
     }
     else {
-        $auditMessage = "Could not update YsisV2 account. Error: $($ex.Exception.Message)"
-        Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
+        Write-Warning "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
     }
-
 }
