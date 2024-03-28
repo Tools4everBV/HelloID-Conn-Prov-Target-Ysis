@@ -1,5 +1,5 @@
 #################################################
-# HelloID-Conn-Prov-Target-{connectorName}-Revoke
+# HelloID-Conn-Prov-Target-Ysis-Revoke
 # PowerShell V2
 #################################################
 
@@ -7,7 +7,7 @@
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
 
 #region functions
-function Invoke-{connectorName}RestMethod {
+function Invoke-YsisRestMethod {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory)]
@@ -51,7 +51,7 @@ function Invoke-{connectorName}RestMethod {
     }
 }
 
-function Resolve-{connectorName}Error {
+function Resolve-YsisError {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory)]
@@ -95,17 +95,17 @@ try {
         throw 'The account reference could not be found'
     }
 
-    Write-Information "Verifying if a {connectorName} account for [$($personContext.Person.DisplayName)] exists"
+    Write-Information "Verifying if a Ysis account for [$($personContext.Person.DisplayName)] exists"
     $correlatedAccount = 'userInfo'
 
     # Add a message and the result of each of the validations showing what will happen during enforcement
     if ($actionContext.DryRun -eq $true) {
-        Write-Information "[DryRun] Revoke {connectorName} entitlement: [$($actionContext.References.Permission.Reference)], will be executed during enforcement"
+        Write-Information "[DryRun] Revoke Ysis entitlement: [$($actionContext.References.Permission.Reference)], will be executed during enforcement"
     }
 
     # Process
     if (-not($actionContext.DryRun -eq $true)) {
-        Write-Information "Revoking {connectorName} permission: [$($actionContext.References.Permission.Reference)]"
+        Write-Information "Revoking Ysis permission: [$($actionContext.References.Permission.Reference)]"
 
         $outputContext.Success = $true
         $outputContext.AuditLogs.Add([PSCustomObject]@{
@@ -118,11 +118,11 @@ try {
     $ex = $PSItem
     if ($($ex.Exception.GetType().FullName -eq 'Microsoft.PowerShell.Commands.HttpResponseException') -or
         $($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
-        $errorObj = Resolve-{connectorName}Error -ErrorObject $ex
-        $auditMessage = "Could not revoke {connectorName} permission. Error: $($errorObj.FriendlyMessage)"
+        $errorObj = Resolve-YsisError -ErrorObject $ex
+        $auditMessage = "Could not revoke Ysis permission. Error: $($errorObj.FriendlyMessage)"
         Write-Warning "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
     } else {
-        $auditMessage = "Could not revoke {connectorName} permission. Error: $($_.Exception.Message)"
+        $auditMessage = "Could not revoke Ysis permission. Error: $($_.Exception.Message)"
         Write-Warning "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
     }
     $outputContext.AuditLogs.Add([PSCustomObject]@{

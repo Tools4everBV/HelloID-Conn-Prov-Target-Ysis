@@ -1,5 +1,5 @@
 #################################################
-# HelloID-Conn-Prov-Target-YsisV2-Delete
+# HelloID-Conn-Prov-Target-Ysis-Delete
 # PowerShell V2
 #################################################
 
@@ -18,37 +18,40 @@ switch ($($actionContext.Configuration.isDebug)) {
 }
 
 #region functions
-function Resolve-YsisV2Error {
+function Resolve-YsisError {
+    [CmdletBinding()]
     param (
+        [Parameter(Mandatory)]
         [object]
         $ErrorObject
     )
-    $httpErrorObj = [PSCustomObject]@{
-        ScriptLineNumber = $ErrorObject.InvocationInfo.ScriptLineNumber
-        Line             = $ErrorObject.InvocationInfo.Line
-        ErrorDetails     = $ErrorObject.Exception.Message
-        FriendlyMessage  = $ErrorObject.Exception.Message
-    }
-
-    try {
-        if ($null -eq $ErrorObject.ErrorDetails) {
-            $streamReaderResponse = [System.IO.StreamReader]::new($ErrorObject.Exception.Response.GetResponseStream()).ReadToEnd()
-            if ($null -ne $streamReaderResponse) {
-                $convertedError = $streamReaderResponse | ConvertFrom-Json
-                $httpErrorObj.ErrorDetails = "Message: $($convertedError.error), description: $($convertedError.error_description)"
-                $httpErrorObj.FriendlyMessage = "Message: $($convertedError.error), description: $($convertedError.error_description)"
+    process {
+        $httpErrorObj = [PSCustomObject]@{
+            ScriptLineNumber = $ErrorObject.InvocationInfo.ScriptLineNumber
+            Line             = $ErrorObject.InvocationInfo.Line
+            ErrorDetails     = $ErrorObject.Exception.Message
+            FriendlyMessage  = $ErrorObject.Exception.Message
+        }
+        if (-not [string]::IsNullOrEmpty($ErrorObject.ErrorDetails.Message)) {
+            $httpErrorObj.ErrorDetails = $ErrorObject.ErrorDetails.Message
+        } elseif ($ErrorObject.Exception.GetType().FullName -eq 'System.Net.WebException') {
+            if ($null -ne $ErrorObject.Exception.Response) {
+                $streamReaderResponse = [System.IO.StreamReader]::new($ErrorObject.Exception.Response.GetResponseStream()).ReadToEnd()
+                if (-not [string]::IsNullOrEmpty($streamReaderResponse)) {
+                    $httpErrorObj.ErrorDetails = $streamReaderResponse
+                }
             }
         }
-        else {
-            $errorResponse = $ErrorObject.ErrorDetails | ConvertFrom-Json
-            $httpErrorObj.ErrorDetails = "Message: $($errorResponse.detail), type: $($errorResponse.scimType)"
-            $httpErrorObj.FriendlyMessage = "$($errorResponse.detail), type: $($errorResponse.scimType)"
+        try {
+            $errorDetailsObject = ($httpErrorObj.ErrorDetails | ConvertFrom-Json)
+            # Make sure to inspect the error result object and add only the error message as a FriendlyMessage.
+            # $httpErrorObj.FriendlyMessage = $errorDetailsObject.message
+            $httpErrorObj.FriendlyMessage = $httpErrorObj.ErrorDetails # Temporarily assignment
+        } catch {
+            $httpErrorObj.FriendlyMessage = $httpErrorObj.ErrorDetails
         }
+        Write-Output $httpErrorObj
     }
-    catch {
-        $httpErrorObj.FriendlyMessage = "Received an unexpected response. The JSON could not be converted, error: [$($_.Exception.Message)]. Original error from web service: [$($ErrorObject.Exception.Message)]"
-    }
-    Write-Output $httpErrorObj
 }
 #endregion functions
 
@@ -82,7 +85,7 @@ try {
     $headers.Add('Accept', 'application/json')
     $headers.Add('Content-Type', 'application/json')
 
-    Write-Verbose "Verifying if YsisV2 account for [$($p.DisplayName)] exists"
+    Write-Verbose "Verifying if Ysis account for [$($p.DisplayName)] exists"
     try {
         $splatParams = @{
             Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
@@ -95,7 +98,7 @@ try {
         if ($_.Exception.Response.StatusCode -eq 404) {
             $outputContext.AuditLogs.Add([PSCustomObject]@{
                     Action  = "DeleteAccount" # Optionally specify a different action for this audit log
-                    Message = "YsisV2 account for: [$($p.DisplayName)] not found. Possibly already deleted. Skipping action"
+                    Message = "Ysis account for: [$($p.DisplayName)] not found. Possibly already deleted. Skipping action"
                     IsError = $false
                 })          
             $responseUser = $null
@@ -109,7 +112,7 @@ try {
         if ($actionContext.DryRun -eq $true) {
             $outputContext.AuditLogs.Add([PSCustomObject]@{
                     Action  = "DeleteAccount" # Optionally specify a different action for this audit log
-                    Message = "Delete YsisV2 account for [$($p.DisplayName)] with reference [$($actionContext.References.Account)] will be executed during enforcement."
+                    Message = "Delete Ysis account for [$($p.DisplayName)] with reference [$($actionContext.References.Account)] will be executed during enforcement."
                     IsError = $false
                 })
         }
@@ -117,7 +120,7 @@ try {
         if (-Not($actionContext.DryRun -eq $true)) {
             if ($config.UpdateUsernameOnDelete -eq $true) {
                 # Optioanl update Username before "archive"  
-                Write-Verbose "Updating YsisV2 account with accountReference: [$($actionContext.References.Account)]"
+                Write-Verbose "Updating Ysis account with accountReference: [$($actionContext.References.Account)]"
                 $responseUser.userName = $responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials
                 $splatParams = @{
                     Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
@@ -130,7 +133,7 @@ try {
 
                 Write-Verbose "Username of account [$($p.DisplayName)] with reference [$($actionContext.References.Account)] updated"
             }
-            Write-Verbose "Deleting YsisV2 account with accountReference: [$($actionContext.References.Account)]"        
+            Write-Verbose "Deleting Ysis account with accountReference: [$($actionContext.References.Account)]"        
             # $responseUser.active = $actionContext.Data.active
             $splatParams = @{
                 Uri     = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
@@ -151,10 +154,10 @@ try {
 catch {
     $ex = $PSItem
     if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
-        $errorObj = Resolve-YsisV2Error -ErrorObject $ex
+        $errorObj = Resolve-YsisError -ErrorObject $ex
         $outputContext.AuditLogs.Add([PSCustomObject]@{
                 Action  = "DeleteAccount" # Optionally specify a different action for this audit log
-                Message = "Could not delete YsisV2 account. Error: $($errorObj.FriendlyMessage)"
+                Message = "Could not delete Ysis account. Error: $($errorObj.FriendlyMessage)"
                 IsError = $true
             })
         Write-Verbose "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
@@ -162,7 +165,7 @@ catch {
     else {                
         $outputContext.AuditLogs.Add([PSCustomObject]@{
                 Action  = "DeleteAccount" # Optionally specify a different action for this audit log
-                Message = "Could not delete YsisV2 account. Error: $($ex.Exception.Message)"
+                Message = "Could not delete Ysis account. Error: $($ex.Exception.Message)"
                 IsError = $true
             })
         Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"

@@ -107,7 +107,6 @@ try {
         Write-Information "Granting Ysis entitlement: [$($actionContext.References.Permission.Reference)]"
 
         # Make sure to test with special characters and if needed; add utf8 encoding.
-
         $outputContext.Success = $true
         $outputContext.AuditLogs.Add([PSCustomObject]@{
             Message = "Grant permission [$($actionContext.References.Permission.DisplayName)] was successful"
