@@ -287,16 +287,16 @@ try {
         if ([string]::IsNullOrEmpty($disciplineSearchValue)) {
             Write-Warning "No externalId found for found title [$($account.Position)]"
             $outputContext.AuditLogs.Add([PSCustomObject]@{
-                    Action  = "CreateAccount" # Optionally specify a different action for this audit log
+                    Action  = "CreateAccount"
                     Message = "Failed to create account with username $($account.UserName): No discipline mapping for found in csv for title [$($account.Position)]"
                     IsError = $true
                 })
         }
 
         if ([string]::IsNullOrEmpty($account.employeeNumber)) {
-            Write-Warning "Person does not has a employeenumber"
+            Write-Warning "Person does not have a employeenumber"
             $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "CreateAccount" # Optionally specify a different action for this audit log
+                Action  = "CreateAccount"
                 Message = "Failed to create account with username $($account.UserName): No employeenumber mapped for account"
                 IsError = $true
             })
@@ -305,7 +305,7 @@ try {
         if ([string]::IsNullOrEmpty($account.Discipline)) {
             Write-Warning "Discipline mapping not found for [$($account.Position)] [$disciplineSearchValue]"
             $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "CreateAccount" # Optionally specify a different action for this audit log
+                Action  = "CreateAccount"
                 Message = "Failed to create account with username $($account.UserName): No entry found in the discipline mapping found for title: [$($account.Position)] with externalId: [$disciplineSearchValue]"
                 IsError = $true
             })
@@ -314,7 +314,7 @@ try {
         if ($mappedObject.Count -gt 1) {
             Write-Warning "Multiple discipline-mappings found for [$($account.Position)] [$disciplineSearchValue]"
             $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "CreateAccount" # Optionally specify a different action for this audit log
+                Action  = "CreateAccount"
                 Message = "Failed to create account with username $($account.UserName): Multiple entries found in the discipline mapping found for title: [$($account.Position)] with externalId: [$disciplineSearchValue]"
                 IsError = $true
             })
