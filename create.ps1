@@ -407,7 +407,6 @@ try {
         }
 
         if ($actionContext.DryRun -eq $true) {
-            $outputContext.AccountReference = "DRYRUN"
             Write-Warning "Account with username [$($account.UserName)] and discipline [$($mappedObject.Discipline)] will be created."
         }
     }
