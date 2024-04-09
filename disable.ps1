@@ -17,8 +17,8 @@ switch ($($actionContext.Configuration.isDebug)) {
     $false { $VerbosePreference = 'SilentlyContinue' }
 }
 
-#region functionsfunction 
-Resolve-YsisError {
+#region functions
+function Resolve-YsisError {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory)]
@@ -98,7 +98,7 @@ try {
         if ($_.Exception.Response.StatusCode -eq 404) {
             $outputContext.AuditLogs.Add([PSCustomObject]@{
                     Action  = "DisableAccount" # Optionally specify a different action for this audit log
-                    Message = "Ysis account for: [$($p.DisplayName)] not found. Possibly already deleted. Skipping action"
+                    Message = "Ysis account for [$($p.DisplayName)] not found. Possibly already deleted. Skipping action"
                     IsError = $false
                 })
             throw "Possibly deleted"
@@ -116,7 +116,7 @@ try {
 
     if (-Not($actionContext.DryRun -eq $true)) {
         # Write enable logic here
-        Write-Verbose "Disabling Ysis account with accountReference: [$($actionContext.References.Account)]"
+        Write-Verbose "Disabling Ysis account with accountReference [$($actionContext.References.Account)]"
         $responseUser.active = $false
         $splatParams = @{
             Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
