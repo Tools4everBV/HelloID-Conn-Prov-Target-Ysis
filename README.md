@@ -25,6 +25,11 @@
   - [Getting help](#getting-help)
   - [HelloID Docs](#helloid-docs)
 
++# To add:
+- Concurrent sessions on 1
+- Fields Beroep en Opmerking are cleared
+- Doc needs to be partly rewritten
+
 ## Introduction
 
 The HelloID-Conn-Prov-Target-Ysis connector creates and updates user accounts within Ysis. The Ysis API is a SCIM based (http://www.simplecloud.info) API and has some limitations for our provisioning process. For more information you can check the Ysis SCIM documentation (https://apihelp.gerimedica.nl/category/scim/).
