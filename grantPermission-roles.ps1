@@ -16,50 +16,6 @@ switch ($($actionContext.Configuration.isDebug)) {
 }
 
 #region functions
-function Invoke-YsisRestMethod {
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory)]
-        [ValidateNotNullOrEmpty()]
-        [string]
-        $Method,
-
-        [Parameter(Mandatory)]
-        [ValidateNotNullOrEmpty()]
-        [string]
-        $Uri,
-
-        [object]
-        $Body,
-
-        [string]
-        $ContentType = 'application/json',
-
-        [Parameter(Mandatory)]
-        [System.Collections.IDictionary]
-        $Headers
-    )
-
-    process {
-        try {
-            $splatParams = @{
-                Uri         = $Uri
-                Headers     = $Headers
-                Method      = $Method
-                ContentType = $ContentType
-            }
-
-            if ($Body) {
-                $splatParams['Body'] = $Body
-            }
-            Invoke-RestMethod @splatParams -Verbose:$false
-        }
-        catch {
-            $PSCmdlet.ThrowTerminatingError($_)
-        }
-    }
-}
-
 function Resolve-YsisError {
     [CmdletBinding()]
     param (
