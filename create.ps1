@@ -57,36 +57,39 @@ function Set-YsisInitials-Iteration {
 }
 
 function Resolve-YsisError {
+    [CmdletBinding()]
     param (
+        [Parameter(Mandatory)]
         [object]
         $ErrorObject
     )
-    $httpErrorObj = [PSCustomObject]@{
-        ScriptLineNumber = $ErrorObject.InvocationInfo.ScriptLineNumber
-        Line             = $ErrorObject.InvocationInfo.Line
-        ErrorDetails     = $ErrorObject.Exception.Message
-        FriendlyMessage  = $ErrorObject.Exception.Message
-    }
-
-    try {
-        if ($null -eq $ErrorObject.ErrorDetails) {
-            $streamReaderResponse = [System.IO.StreamReader]::new($ErrorObject.Exception.Response.GetResponseStream()).ReadToEnd()
-            if ($null -ne $streamReaderResponse) {
-                $convertedError = $streamReaderResponse | ConvertFrom-Json
-                $httpErrorObj.ErrorDetails = "Message: $($convertedError.error), description: $($convertedError.error_description)"
-                $httpErrorObj.FriendlyMessage = "Message: $($convertedError.error), description: $($convertedError.error_description)"
+    process {
+        $httpErrorObj = [PSCustomObject]@{
+            ScriptLineNumber = $ErrorObject.InvocationInfo.ScriptLineNumber
+            Line             = $ErrorObject.InvocationInfo.Line
+            ErrorDetails     = $ErrorObject.Exception.Message
+            FriendlyMessage  = $ErrorObject.Exception.Message
+        }
+        if (-not [string]::IsNullOrEmpty($ErrorObject.ErrorDetails.Message)) {
+            $httpErrorObj.ErrorDetails = $ErrorObject.ErrorDetails.Message
+        } elseif ($ErrorObject.Exception.GetType().FullName -eq 'System.Net.WebException') {
+            if ($null -ne $ErrorObject.Exception.Response) {
+                $streamReaderResponse = [System.IO.StreamReader]::new($ErrorObject.Exception.Response.GetResponseStream()).ReadToEnd()
+                if (-not [string]::IsNullOrEmpty($streamReaderResponse)) {
+                    $httpErrorObj.ErrorDetails = $streamReaderResponse
+                }
             }
         }
-        else {
-            $errorResponse = $ErrorObject.ErrorDetails | ConvertFrom-Json
-            $httpErrorObj.ErrorDetails = "Message: $($errorResponse.detail), type: $($errorResponse.scimType)"
-            $httpErrorObj.FriendlyMessage = "$($errorResponse.detail), type: $($errorResponse.scimType)"
+        try {
+            $errorDetailsObject = ($httpErrorObj.ErrorDetails | ConvertFrom-Json)
+            # Make sure to inspect the error result object and add only the error message as a FriendlyMessage.
+            # $httpErrorObj.FriendlyMessage = $errorDetailsObject.message
+            $httpErrorObj.FriendlyMessage = $httpErrorObj.ErrorDetails # Temporarily assignment
+        } catch {
+            $httpErrorObj.FriendlyMessage = $httpErrorObj.ErrorDetails
         }
+        Write-Output $httpErrorObj
     }
-    catch {
-        $httpErrorObj.FriendlyMessage = "Received an unexpected response. The JSON could not be converted, error: [$($_.Exception.Message)]. Original error from web service: [$($ErrorObject.Exception.Message)]"
-    }
-    Write-Output $httpErrorObj
 }
 
 #endregion functions
@@ -285,7 +288,7 @@ try {
     if (!$outputContext.AccountCorrelated -and $null -eq $correlatedAccount) {
 
         if ([string]::IsNullOrEmpty($disciplineSearchValue)) {
-            Write-Warning "No externalId found for found title [$($account.Position)]"
+            Write-Warning "No discipline mapping for found in csv for title [$($account.Position)]"
             $outputContext.AuditLogs.Add([PSCustomObject]@{
                     Action  = "CreateAccount"
                     Message = "Failed to create account with username [$($account.UserName)]: No discipline mapping for found in csv for title [$($account.Position)]"
@@ -294,7 +297,7 @@ try {
         }
 
         if ([string]::IsNullOrEmpty($account.employeeNumber)) {
-            Write-Warning "Person does not have a employeenumber"
+            Write-Warning "No employeenumber mapped for account"
             $outputContext.AuditLogs.Add([PSCustomObject]@{
                 Action  = "CreateAccount"
                 Message = "Failed to create account with username [$($account.UserName)]: No employeenumber mapped for account"
@@ -303,19 +306,19 @@ try {
         }
 
         if ([string]::IsNullOrEmpty($account.Discipline)) {
-            Write-Warning "Discipline mapping not found for [$($account.Position)] [$disciplineSearchValue]"
+            Write-Warning "No entry found in the discipline mapping found for title: [$($account.Position)] with externalId: [$disciplineSearchValue]"
             $outputContext.AuditLogs.Add([PSCustomObject]@{
                 Action  = "CreateAccount"
-                Message = "Failed to create account with username [$($account.UserName)]: No entry found in the discipline mapping found for title: [$($account.Position)] with externalId: [$disciplineSearchValue]"
+                Message = "Failed to create account with username [$($account.UserName)]: No entry found in discipline mapping for title: [$($account.Position)] with externalId: [$disciplineSearchValue]"
                 IsError = $true
             })
         }
 
         if ($mappedObject.Count -gt 1) {
-            Write-Warning "Multiple discipline-mappings found for [$($account.Position)] [$disciplineSearchValue]"
+            Write-Warning "Multiple entries found in the discipline mapping found for title: [$($account.Position)] with externalId: [$disciplineSearchValue]"
             $outputContext.AuditLogs.Add([PSCustomObject]@{
                 Action  = "CreateAccount"
-                Message = "Failed to create account with username [$($account.UserName)]: Multiple entries found in the discipline mapping found for title: [$($account.Position)] with externalId: [$disciplineSearchValue]"
+                Message = "Failed to create account with username [$($account.UserName)]: Multiple entries found in discipline mapping for title: [$($account.Position)] with externalId: [$disciplineSearchValue]"
                 IsError = $true
             })
         }
@@ -326,7 +329,6 @@ try {
         $maxIterations = 5
         $Iterator = 0
         $uniqueness = $false
-
 
         do {
             $ysisAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials = Set-YsisInitials-Iteration -YsisInitials $($account.ysisInitials) -Iteration $Iterator
@@ -364,7 +366,7 @@ try {
 
                 if ($_.Exception.Response.StatusCode -eq 'Conflict' -and $($errorObj.FriendlyMessage) -match "A user with the 'ysisInitials'") {
                     $Iterator++
-                    Write-Warning "YSIS-Initials in use, trying with [$($account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)]."
+                    Write-Warning "Ysis-Initials in use, trying with [$($account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)]"
                 }
                 else {
                     throw $_

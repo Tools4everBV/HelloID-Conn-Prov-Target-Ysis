@@ -82,7 +82,6 @@ try {
     }
     $responseAccessToken = Invoke-RestMethod @splatRequestToken -Verbose:$false
 
-    Write-Verbose 'Adding Authorization headers'
     $headers = [System.Collections.Generic.Dictionary[string, string]]::new()
     $headers.Add('Authorization', "Bearer $($responseAccessToken.access_token)")
     $headers.Add('Accept', 'application/json; charset=utf-8')
@@ -127,7 +126,7 @@ try {
             $fifthProperty,
             $sixthProperty)
     }
-    
+
     $contracts = $personContext.Person.Contracts
 
     [array]$desiredContracts = $contracts | Where-Object { $_.Context.InConditions -eq $true -or $actionContext.DryRun -eq $true }
@@ -180,8 +179,7 @@ try {
     #     $account.userName = $currentAccount.userName
     # }
     $account.userName = $currentAccount.userName
-    # Ysis account model mapping
-    # Discipline is immutable, so set Discipline to existing. When discipline is changed, notification will be send.
+    # Ysis account model mapping    # Discipline is immutable, so set Discipline to existing. When discipline is changed, notification will be send.
 
     $ysisAccount = [PSCustomObject]@{
         schemas                                                      = @('urn:ietf:params:scim:schemas:core:2.0:User', 'urn:ietf:params:scim:schemas:extension:ysis:2.0:User', 'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User')
@@ -241,11 +239,24 @@ try {
     # }
 
     if ([string]::IsNullOrEmpty($account.Discipline)) {
-        throw "No discipline-mapping found for [$($account.Position)] [$disciplineSearchValue]"
+        Write-Warning "Discipline mapping not found for [$($account.Position)] [$disciplineSearchValue]"
+        $outputContext.AuditLogs.Add([PSCustomObject]@{
+            Action  = "UpdateAccount"
+            Message = "Failed to update account [$($account.UserName)]: No entry found in discipline mapping for title: [$($account.Position)] with externalId: [$disciplineSearchValue]"
+            IsError = $true
+        })
     }
 
     if ($mappedObject.Count -gt 1) {
-        throw "Multiple discipline-mappings found for [$($account.Position)] [$disciplineSearchValue]"
+        Write-Warning "Multiple discipline-mappings found for [$($account.Position)] [$disciplineSearchValue]"
+        $outputContext.AuditLogs.Add([PSCustomObject]@{
+            Action  = "UpdateAccount"
+            Message = "Failed to update account [$($account.UserName)]: Multiple entries found in discipline mapping for title: [$($account.Position)] with externalId: [$disciplineSearchValue]"
+            IsError = $true
+        })
+    }
+    if ($outputContext.AuditLogs.isError -contains $true) {
+        Throw "Error(s) occured while looking up required values"
     }
 
     # Calculate changes between current data and provided data
@@ -282,16 +293,17 @@ try {
     }
     else {
         Write-Verbose "No Updates for Ysis account with accountReference: [$($actionContext.References.Account)]"
-        $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "UpdateAccount"
-                Message = "Account with username $($account.userName) has no updates"
-                IsError = $false
-            })
+        # Do not log this
+        #$outputContext.AuditLogs.Add([PSCustomObject]@{
+        #        Action  = "UpdateAccount"
+        #        Message = "Account with username $($account.userName) has no updates"
+        #        IsError = $false
+        #    })
     }
 }
 catch {
     $ex = $PSItem
-    if (-Not($ex.Exception.Message -eq 'Possibly deleted')) {
+    if (-Not($ex.Exception.Message -eq 'Possibly deleted'-or $ex.Exception.Message -eq 'Error(s) occured while looking up required values')) {
         if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
             $errorObj = Resolve-YsisError -ErrorObject $ex
             $auditMessage = "Could not update Ysis account. Error: $($errorObj.FriendlyMessage)"

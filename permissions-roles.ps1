@@ -62,7 +62,7 @@ function Get-AccountRoles {
         $headers.Add('Authorization', "Bearer $($responseAccessToken.access_token)")
         $headers.Add('Accept', 'application/json; charset=utf-8')
         $headers.Add('Content-Type', 'application/json')
-        
+
         # Get Role
         $splatRoleParams = @{
             Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/roles"
@@ -81,7 +81,7 @@ function Get-AccountRoles {
 }
 #endregion functions
 
-try {    
+try {
     # Requesting authorization token
     $splatRequestToken = @{
         Uri    = "$($config.BaseUrl)/cas/oauth/token"

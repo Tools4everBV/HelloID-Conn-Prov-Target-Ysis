@@ -6,7 +6,6 @@
 # Initialize default values
 $config = $actionContext.Configuration
 $p = $personContext.Person
-$outputContext.Success = $false
 
 # Enable TLS1.2
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
@@ -56,13 +55,13 @@ function Resolve-YsisError {
 #endregion functions
 
 try {
-    if ([string]::IsNullOrEmpty($($actionContext.References.Account))) {    
+    if ([string]::IsNullOrEmpty($($actionContext.References.Account))) {
         $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "EnableAccount" # Optionally specify a different action for this audit log
+                Action  = "EnableAccount"
                 Message = "The account reference could not be found"
                 IsError = $true
             }
-        )                
+        )
         throw "The account reference could not be found"
     }
 
@@ -98,7 +97,7 @@ try {
         if ($_.Exception.Response.StatusCode -eq 404) {
             $outputContext.AuditLogs.Add([PSCustomObject]@{
                     Action  = "EnableAccount" # Optionally specify a different action for this audit log
-                    Message = "Ysis account for: [$($p.DisplayName)] not found. Possibly deleted"
+                    Message = "Ysis account for [$($p.DisplayName)] not found. Possibly deleted"
                     IsError = $true
                 })
             throw "Possibly deleted"
@@ -109,14 +108,14 @@ try {
     if ($actionContext.DryRun -eq $true) {
         $outputContext.AuditLogs.Add([PSCustomObject]@{
                 Action  = "EnableAccount" # Optionally specify a different action for this audit log
-                Message = "Account [$($p.DisplayName)] with reference  $($actionContext.References.Account) will be enabled"
+                Message = "Account [$($p.DisplayName)] with username [$($responseUser.userName)] will be enabled"
                 IsError = $false
             })
     }
 
     if (-Not($actionContext.DryRun -eq $true)) {
-        # Write enable logic here    
-        Write-Verbose "Enabling Ysis account with accountReference: [$($actionContext.References.Account)]"
+
+        Write-Verbose "Enabling Ysis account with username [$($responseUser.userName)]"
         $responseUser.active = $true
         $splatParams = @{
             Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
@@ -151,11 +150,11 @@ catch {
                 Message = $auditMessage
                 IsError = $true
             })
-    }        
+    }
 }
 finally {
     # Check if auditLogs contains errors, if no errors are found, set success to true
-    if (-NOT($outputContext.AuditLogs.IsError -contains $true)) {
+    if (-not($outputContext.AuditLogs.IsError -contains $true)) {
         $outputContext.Success = $true
     }
     # Retrieve account information for notifications
