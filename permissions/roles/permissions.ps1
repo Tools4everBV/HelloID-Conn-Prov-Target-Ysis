@@ -1,7 +1,7 @@
-########################################
-# HelloID-Conn-Prov-Target-Ysis-Permissions-Roles
+###################################################################
+# HelloID-Conn-Prov-Target-Ysis-Permissions-Roles-GrantPermission
 # PowerShell V2
-########################################
+###################################################################
 
 # Initialize default values
 $config = $actionContext.Configuration

@@ -1,7 +1,7 @@
-#################################################
-# HelloID-Conn-Prov-Target-Ysis-Revoke
+###################################################################
+# HelloID-Conn-Prov-Target-Ysis-Permissions-Roles-RevokePermission
 # PowerShell V2
-#################################################
+###################################################################
 
 # Initialize default values
 $config = $actionContext.Configuration
@@ -113,6 +113,7 @@ try {
         throw $_
     }
 
+    Write-Verbose "Pre: all assigned roles ($($responseUser.roles.count)): $($responseUser.roles.displayName -join ", ")"
     if ($actionContext.DryRun -eq $true) {
         Write-Information "[DryRun] Revoke Ysis entitlement: [$($actionContext.References.Permission.DisplayName)], will be executed during enforcement"
         $outputContext.AuditLogs.Add([PSCustomObject]@{
@@ -124,29 +125,28 @@ try {
     else {
         Write-Information "Revoking Ysis entitlement: [$($actionContext.References.Permission.DisplayName)]"
 
-        if (($responseUser.roles.value.Contains($actionContext.References.Permission.Reference))) {
-            if ($responseUser.roles.count -gt 0 -and $actionContext.References.Permission.Reference -in $responseUser.roles.value) {
-                $responseUser.roles = $responseUser.roles | Where-Object { $_.value -notcontains $actionContext.References.Permission.Reference }
+        if ($responseUser.roles.count -gt 0 -and $actionContext.References.Permission.Reference -in $responseUser.roles.value) {
+            [Array]$responseUser.roles = $responseUser.roles | Where-Object { $_.value -notcontains $actionContext.References.Permission.Reference }
 
-                $splatParams = @{
-                    Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
-                    Headers     = $headers
-                    Method      = 'PUT'
-                    Body        = $responseUser | ConvertTo-Json
-                    ContentType = 'application/scim+json;charset=UTF-8'
-                }
-                $null = Invoke-RestMethod @splatParams -Verbose:$false
+            $splatParams = @{
+                Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
+                Headers     = $headers
+                Method      = 'PUT'
+                Body        = $responseUser | ConvertTo-Json
+                ContentType = 'application/scim+json;charset=UTF-8'
             }
-            else {
-                write-information "Permission is already revoked"
-            }
-
-            $outputContext.Success = $true
-            $outputContext.AuditLogs.Add([PSCustomObject]@{
-                    Message = "Revoke permission [$($actionContext.References.Permission.DisplayName)] was successful"
-                    IsError = $false
-                })
+            $null = Invoke-RestMethod @splatParams -Verbose:$false
+            Write-Verbose "Post: all assigned roles ($($responseUser.roles.count)): $($responseUser.roles.displayName -join ", ")"
         }
+        else {
+            write-information "Permission [$($actionContext.References.Permission.DisplayName)] is already revoked"
+        }
+
+        $outputContext.Success = $true
+        $outputContext.AuditLogs.Add([PSCustomObject]@{
+                Message = "Revoke permission [$($actionContext.References.Permission.DisplayName)] was successful"
+                IsError = $false
+            })
     }
 }
 catch {
@@ -154,11 +154,11 @@ catch {
     if ($($ex.Exception.GetType().FullName -eq 'Microsoft.PowerShell.Commands.HttpResponseException') -or
         $($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
         $errorObj = Resolve-YsisError -ErrorObject $ex
-        $auditMessage = "Could not revoke Ysis permission. Error: $($errorObj.FriendlyMessage)"
+        $auditMessage = "Could not revoke Ysis permission [$($actionContext.References.Permission.DisplayName)]. Error: $($errorObj.FriendlyMessage)"
         Write-Warning "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
     }
     else {
-        $auditMessage = "Could not revoke Ysis permission. Error: $($_.Exception.Message)"
+        $auditMessage = "Could not revoke Ysis permission [$($actionContext.References.Permission.DisplayName)]. Error: $($_.Exception.Message)"
         Write-Warning "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
     }
     $outputContext.AuditLogs.Add([PSCustomObject]@{
