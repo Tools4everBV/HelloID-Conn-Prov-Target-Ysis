@@ -18,6 +18,10 @@ switch ($($actionContext.Configuration.isDebug)) {
 
 #region functions
 function Set-YsisInitials-Iteration {
+    # Generates Unique Ysis initials:
+    # # first two characters lastname + first twee characters nickname (as set in the mapping)
+    # # If not unique, then use logic below (first three letters nickname, then 4, etc)
+    # # When all options are exhausted, add an iterator to the ysisInitials in the mapping
     [cmdletbinding()]
     Param (
         [string]$YsisInitials,
@@ -100,7 +104,7 @@ try {
     $account = $actionContext.Data
     $person = $personContext.Person
 
-    $disciplineSearchField = "JobTitleId"
+    $disciplineSearchField = "JobTitleId" # fieldname in CSV
 
     # Remove ID field because only used for export data
     if ($account.PSObject.Properties.Name -Contains 'id') {
@@ -143,7 +147,9 @@ try {
 
     # set dynamic values
     $mapping = Import-Csv "$($config.MappingFile)" -Delimiter ";" -Encoding Default
+
     Write-Verbose "Searching within the mapping csv for value [$($disciplineSearchValue)] in field [$($disciplineSearchField)]"
+
     $mappedObject = $mapping | Where-Object { $_.$disciplineSearchField -eq $disciplineSearchValue }
     $account.Discipline = $mappedObject.Discipline
 
@@ -184,7 +190,7 @@ try {
             initials     = $account.Initials
             bigNumber    = $account.BigNumber
             position     = $account.Position
-            modules      = @($config.DefaultModule)
+            modules      = @()
         }
         "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User" = [PSCustomObject]@{
             employeeNumber = $account.EmployeeNumber

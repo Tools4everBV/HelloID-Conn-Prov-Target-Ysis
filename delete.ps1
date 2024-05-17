@@ -119,7 +119,7 @@ try {
 
         if (-Not($actionContext.DryRun -eq $true)) {
             if ($config.UpdateUsernameOnDelete -eq $true) {
-                # Optioanl update Username before "archive"  
+                # Optional update Username before "archive"
                 Write-Verbose "Updating Ysis account with accountReference: [$($actionContext.References.Account)]"
                 $responseUser.userName = $responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials
                 $splatParams = @{
@@ -133,12 +133,12 @@ try {
 
                 Write-Verbose "Username of account [$($p.DisplayName)] with reference [$($actionContext.References.Account)] updated"
             }
-            Write-Verbose "Deleting Ysis account with accountReference: [$($actionContext.References.Account)]"        
+            Write-Verbose "Deleting Ysis account with accountReference: [$($actionContext.References.Account)]"
             # $responseUser.active = $actionContext.Data.active
             $splatParams = @{
                 Uri     = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
                 Headers = $headers
-                Method  = 'DELETE'            
+                Method  = 'DELETE'
             }
             $null = Invoke-RestMethod @splatParams -Verbose:$false
 
@@ -149,7 +149,7 @@ try {
                 })
         }
     }
-    
+
 }
 catch {
     $ex = $PSItem
@@ -162,7 +162,7 @@ catch {
             })
         Write-Verbose "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
     }
-    else {                
+    else {
         $outputContext.AuditLogs.Add([PSCustomObject]@{
                 Action  = "DeleteAccount" # Optionally specify a different action for this audit log
                 Message = "Could not delete Ysis account. Error: $($ex.Exception.Message)"
@@ -178,6 +178,6 @@ finally {
     }
     # Retrieve account information for notifications
     #$outputContext.PreviousData.ExternalId = $personContext.References.Account
-    $outputContext.Data.UserName = $responseUser.userName
+    #$outputContext.Data.UserName = $responseUser.userName # This was enabled but cannot work at the moment due to responseUser set to null in the rescript (todo)
     #$outputContext.Data.ExternalId = $personContext.References.Account
 }
