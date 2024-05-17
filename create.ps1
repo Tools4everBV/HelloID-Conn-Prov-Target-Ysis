@@ -5,7 +5,7 @@
 
 # Initialize default values
 $config = $actionContext.Configuration
-$outputContext.AccountReference = "DRYRUN"
+$outputContext.AccountReference = 'Currently not available'
 
 # Enable TLS1.2
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
@@ -260,7 +260,7 @@ try {
         $response = Invoke-RestMethod @splatParams -Verbose:$false
 
         if (($response | measure-object).count -gt 1) {
-            $auditMessage = "multiple users found for $($person.DisplayName) with correlationValue: [($correlationValue)] - $($response.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials -join(","))"
+            $auditMessage = "Multiple users found for [$($person.DisplayName)] with correlationValue [($correlationValue)]: [$($response.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials -join ", ")]"
             Throw $auditMessage
         }
         elseif (($response | measure-object).count -eq 1) {
@@ -271,7 +271,7 @@ try {
         }
 
         if ($null -ne $correlatedAccount) {
-            Write-Verbose "correlation found in Ysis for [$($person.DisplayName) ($correlationValue)] with ysisInitials $($correlatedAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials) [$($correlatedAccount.id)]"   
+            Write-Verbose "Ysis account correlated for [$($person.DisplayName)] with correlationValue [$correlationValue] and ysisInitials [$($correlatedAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)] [$($correlatedAccount.id)]"
 
             $outputContext.AccountReference = $correlatedAccount.id
 
@@ -312,19 +312,19 @@ try {
         }
 
         if ([string]::IsNullOrEmpty($account.Discipline)) {
-            Write-Warning "No entry found in the discipline mapping found for title: [$($account.Position)] with externalId: [$disciplineSearchValue]"
+            Write-Warning "No entry found in the discipline mapping found for title [$($account.Position)] with externalId [$disciplineSearchValue]"
             $outputContext.AuditLogs.Add([PSCustomObject]@{
                 Action  = "CreateAccount"
-                Message = "Failed to create account with username [$($account.UserName)]: No entry found in discipline mapping for title: [$($account.Position)] with externalId: [$disciplineSearchValue]"
+                Message = "Failed to create account with username [$($account.UserName)]: No entry found in discipline mapping for title [$($account.Position)] with externalId [$disciplineSearchValue]"
                 IsError = $true
             })
         }
 
         if ($mappedObject.Count -gt 1) {
-            Write-Warning "Multiple entries found in the discipline mapping found for title: [$($account.Position)] with externalId: [$disciplineSearchValue]"
+            Write-Warning "Multiple entries found in discipline mapping for title [$($account.Position)] with externalId [$disciplineSearchValue]: [$($mappedObject.Discipline -join ", ")]"
             $outputContext.AuditLogs.Add([PSCustomObject]@{
                 Action  = "CreateAccount"
-                Message = "Failed to create account with username [$($account.UserName)]: Multiple entries found in discipline mapping for title: [$($account.Position)] with externalId: [$disciplineSearchValue]"
+                Message = "Failed to create account with username [$($account.UserName)]: Multiple entries found in discipline mapping for title [$($account.Position)] with externalId [$disciplineSearchValue]: [$($mappedObject.Discipline -join ", ")]"
                 IsError = $true
             })
         }
@@ -352,7 +352,7 @@ try {
                     $responseCreateUser = Invoke-RestMethod @splatCreateUserParams -Verbose:$false
                 }
                 else {
-                    Write-Warning "will send: $($splatCreateUserParams.Body)"
+                    Write-Warning "Will send: $($splatCreateUserParams.Body)"
                 }
                 $uniqueness = $true
 
@@ -382,22 +382,20 @@ try {
 
         if (-not($uniqueness -eq $true)) {
             throw "A user with the 'ysisInitials' '$($account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)' already exists. YSIS-Initials out of iterations"
-            if ($actionContext.DryRun -eq $true) {
-
-                Write-Warning "Account with username [$($account.UserName)] and discipline [$($mappedObject.Discipline)] will be created."
-                $outputContext.AuditLogs.Add([PSCustomObject]@{
-                        Action  = "CreateAccount"
-                        Message = "Account with username [$($account.UserName)] and discipline [$($mappedObject.Discipline)] will be created."
-                        IsError = $false
-                    })
-            }
-
-            # add ID to export data
-            $account | Add-Member -MemberType NoteProperty -Name id -Value $responseCreateUser.id -Force
         }
-    }
-    if ($actionContext.DryRun -eq $true) {
-        Write-Warning "Account with username [$($account.UserName)] and discipline [$($mappedObject.Discipline)] will be created."
+
+        if ($actionContext.DryRun -eq $true) {
+
+            Write-Warning "[DryRun] Account with username [$($account.UserName)] and discipline [$($mappedObject.Discipline)] will be created."
+            $outputContext.AuditLogs.Add([PSCustomObject]@{
+                    Action  = "CreateAccount"
+                    Message = "[DryRun] Account with username [$($account.UserName)] and discipline [$($mappedObject.Discipline)] will be created."
+                    IsError = $false
+                })
+        }
+
+        # add ID to export data
+        $account | Add-Member -MemberType NoteProperty -Name id -Value $responseCreateUser.id -Force
     }
 }
 catch {

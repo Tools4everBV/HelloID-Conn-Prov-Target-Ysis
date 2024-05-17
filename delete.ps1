@@ -5,7 +5,7 @@
 
 # Initialize default values
 $config = $actionContext.Configuration
-$p = $personContext.Person
+$person = $personContext.Person
 $outputContext.Success = $false
 
 # Enable TLS1.2
@@ -34,7 +34,8 @@ function Resolve-YsisError {
         }
         if (-not [string]::IsNullOrEmpty($ErrorObject.ErrorDetails.Message)) {
             $httpErrorObj.ErrorDetails = $ErrorObject.ErrorDetails.Message
-        } elseif ($ErrorObject.Exception.GetType().FullName -eq 'System.Net.WebException') {
+        }
+        elseif ($ErrorObject.Exception.GetType().FullName -eq 'System.Net.WebException') {
             if ($null -ne $ErrorObject.Exception.Response) {
                 $streamReaderResponse = [System.IO.StreamReader]::new($ErrorObject.Exception.Response.GetResponseStream()).ReadToEnd()
                 if (-not [string]::IsNullOrEmpty($streamReaderResponse)) {
@@ -47,7 +48,8 @@ function Resolve-YsisError {
             # Make sure to inspect the error result object and add only the error message as a FriendlyMessage.
             # $httpErrorObj.FriendlyMessage = $errorDetailsObject.message
             $httpErrorObj.FriendlyMessage = $httpErrorObj.ErrorDetails # Temporarily assignment
-        } catch {
+        }
+        catch {
             $httpErrorObj.FriendlyMessage = $httpErrorObj.ErrorDetails
         }
         Write-Output $httpErrorObj
@@ -56,13 +58,7 @@ function Resolve-YsisError {
 #endregion functions
 
 try {
-    if ([string]::IsNullOrEmpty($($actionContext.References.Account))) {    
-        $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "DeleteAccount" # Optionally specify a different action for this audit log
-                Message = "The account reference could not be found"
-                IsError = $true
-            }
-        )                
+    if ([string]::IsNullOrEmpty($($actionContext.References.Account))) {
         throw "The account reference could not be found"
     }
 
@@ -85,7 +81,7 @@ try {
     $headers.Add('Accept', 'application/json')
     $headers.Add('Content-Type', 'application/json')
 
-    Write-Verbose "Verifying if Ysis account for [$($p.DisplayName)] exists"
+    Write-Verbose "Verifying if Ysis account for [$($person.DisplayName)] exists"
     try {
         $splatParams = @{
             Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
@@ -97,10 +93,10 @@ try {
     catch {
         if ($_.Exception.Response.StatusCode -eq 404) {
             $outputContext.AuditLogs.Add([PSCustomObject]@{
-                    Action  = "DeleteAccount" # Optionally specify a different action for this audit log
-                    Message = "Ysis account for: [$($p.DisplayName)] not found. Possibly already deleted. Skipping action"
+                    Action  = "DeleteAccount"
+                    Message = "Ysis account for [$($person.DisplayName)] could not be found by account reference [$($actionContext.References.Account)] and is possibly already deleted. Skipping action"
                     IsError = $false
-                })          
+                })
             $responseUser = $null
         }
         else {
@@ -108,11 +104,11 @@ try {
         }
     }
 
-    if ($responseUser) {   
+    if ($responseUser) {
         if ($actionContext.DryRun -eq $true) {
             $outputContext.AuditLogs.Add([PSCustomObject]@{
-                    Action  = "DeleteAccount" # Optionally specify a different action for this audit log
-                    Message = "Delete Ysis account for [$($p.DisplayName)] with reference [$($actionContext.References.Account)] will be executed during enforcement."
+                    Action  = "DeleteAccount"
+                    Message = "[DryRun] Delete Ysis account for [$($person.DisplayName)] with reference [$($actionContext.References.Account)] will be executed during enforcement"
                     IsError = $false
                 })
         }
@@ -131,10 +127,9 @@ try {
                 }
                 $null = Invoke-RestMethod @splatParams -Verbose:$false
 
-                Write-Verbose "Username of account [$($p.DisplayName)] with reference [$($actionContext.References.Account)] updated"
+                Write-Verbose "Username of account [$($person.DisplayName)] with reference [$($actionContext.References.Account)] updated"
             }
-            Write-Verbose "Deleting Ysis account with accountReference: [$($actionContext.References.Account)]"
-            # $responseUser.active = $actionContext.Data.active
+            Write-Verbose "Deleting Ysis account with userName accountReference [$($actionContext.References.Account)]"
             $splatParams = @{
                 Uri     = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
                 Headers = $headers
@@ -143,20 +138,19 @@ try {
             $null = Invoke-RestMethod @splatParams -Verbose:$false
 
             $outputContext.AuditLogs.Add([PSCustomObject]@{
-                    Action  = "DeleteAccount" # Optionally specify a different action for this audit log
-                    Message = "Delete account [$($p.DisplayName)] with reference  [$($actionContext.References.Account)] was successful."
+                    Action  = "DeleteAccount"
+                    Message = "Delete account [$($person.DisplayName)] with reference  [$($actionContext.References.Account)] was successful"
                     IsError = $false
                 })
         }
     }
-
 }
 catch {
     $ex = $PSItem
     if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
         $errorObj = Resolve-YsisError -ErrorObject $ex
         $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "DeleteAccount" # Optionally specify a different action for this audit log
+                Action  = "DeleteAccount"
                 Message = "Could not delete Ysis account. Error: $($errorObj.FriendlyMessage)"
                 IsError = $true
             })
@@ -164,7 +158,7 @@ catch {
     }
     else {
         $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "DeleteAccount" # Optionally specify a different action for this audit log
+                Action  = "DeleteAccount"
                 Message = "Could not delete Ysis account. Error: $($ex.Exception.Message)"
                 IsError = $true
             })
@@ -176,8 +170,4 @@ finally {
     if (-NOT($outputContext.AuditLogs.IsError -contains $true)) {
         $outputContext.Success = $true
     }
-    # Retrieve account information for notifications
-    #$outputContext.PreviousData.ExternalId = $personContext.References.Account
-    #$outputContext.Data.UserName = $responseUser.userName # This was enabled but cannot work at the moment due to responseUser set to null in the rescript (todo)
-    #$outputContext.Data.ExternalId = $personContext.References.Account
 }

@@ -5,7 +5,7 @@
 
 # Initialize default values
 $config = $actionContext.Configuration
-$p = $personContext.Person
+$person = $personContext.Person
 $outputContext.Success = $false
 
 # Enable TLS1.2
@@ -56,13 +56,7 @@ function Resolve-YsisError {
 #endregion functions
 
 try {
-    if ([string]::IsNullOrEmpty($($actionContext.References.Account))) {    
-        $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "DisableAccount" # Optionally specify a different action for this audit log
-                Message = "The account reference could not be found"
-                IsError = $true
-            }
-        )                
+    if ([string]::IsNullOrEmpty($($actionContext.References.Account))) {
         throw "The account reference could not be found"
     }
 
@@ -79,13 +73,12 @@ try {
 
     $responseAccessToken = Invoke-RestMethod @splatRequestToken -Verbose:$false
 
-    Write-Verbose 'Adding Authorization headers'
     $headers = [System.Collections.Generic.Dictionary[string, string]]::new()
     $headers.Add('Authorization', "Bearer $($responseAccessToken.access_token)")
     $headers.Add('Accept', 'application/json')
     $headers.Add('Content-Type', 'application/json')
 
-    Write-Verbose "Verifying if Ysis account for [$($p.DisplayName)] exists"
+    Write-Verbose "Verifying if Ysis account for [$($person.DisplayName)] exists"
     try {
         $splatParams = @{
             Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
@@ -97,25 +90,24 @@ try {
     catch {
         if ($_.Exception.Response.StatusCode -eq 404) {
             $outputContext.AuditLogs.Add([PSCustomObject]@{
-                    Action  = "DisableAccount" # Optionally specify a different action for this audit log
-                    Message = "Ysis account for [$($p.DisplayName)] not found. Possibly already deleted. Skipping action"
+                    Action  = "DisableAccount"
+                    Message = "Ysis account for [$($person.DisplayName)] could not be found by account reference [$($actionContext.References.Account)] and is possibly already deleted. Skipping action"
                     IsError = $false
                 })
-            throw "Possibly deleted"
+            throw "AccountNotFound"
         }
         throw $_
     }
 
     if ($actionContext.DryRun -eq $true) {
         $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "DisableAccount" # Optionally specify a different action for this audit log
-                Message = "Disable Ysis account for [$($p.DisplayName)] with reference  $($actionContext.References.Account) will be executed during enforcement."
+                Action  = "DisableAccount"
+                Message = "[DryRun] Disable Ysis account for [$($person.DisplayName)] with reference  $($actionContext.References.Account) will be executed during enforcement."
                 IsError = $false
             })
     }
 
     if (-Not($actionContext.DryRun -eq $true)) {
-        # Write enable logic here
         Write-Verbose "Disabling Ysis account with accountReference [$($actionContext.References.Account)]"
         $responseUser.active = $false
         $splatParams = @{
@@ -128,15 +120,15 @@ try {
         $null = Invoke-RestMethod @splatParams -Verbose:$false
 
         $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "DisableAccount" # Optionally specify a different action for this audit log
-                Message = "Account [$($p.DisplayName)] with reference  $($actionContext.References.Account) disabled"
+                Action  = "DisableAccount"
+                Message = "Account [$($person.DisplayName)] with reference  $($actionContext.References.Account) disabled"
                 IsError = $false
             })
     }
 }
 catch {
     $ex = $PSItem
-    if (-Not($ex.Exception.Message -eq 'Possibly deleted')) {
+    if (-Not($ex.Exception.Message -eq 'AccountNotFound')) {
         if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
             $errorObj = Resolve-YsisError -ErrorObject $ex
             $auditMessage = "Could not disable Ysis account. Error: $($errorObj.FriendlyMessage)"
@@ -147,11 +139,11 @@ catch {
             Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
         }
         $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "DisableAccount" # Optionally specify a different action for this audit log
+                Action  = "DisableAccount"
                 Message = $auditMessage
                 IsError = $true
             })
-    } 
+    }
 }
 finally {
     # Check if auditLogs contains errors, if no errors are found, set success to true

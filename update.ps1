@@ -98,12 +98,13 @@ try {
     }
     catch {
         if ($_.Exception.Response.StatusCode -eq 404) {
+            Write-Warning "Ysis account for [$($person.DisplayName)] could not be found by accountreference [$($actionContext.References.Account)] and is possibly deleted. To create or correlate a new account, unmanage the account entitlement and rerun an enforcement"
             $outputContext.AuditLogs.Add([PSCustomObject]@{
                     Action  = "UpdateAccount"
-                    Message = "Ysis account for [$($person.DisplayName)] not found. Possibly deleted"
+                    Message = "Ysis account for [$($person.DisplayName)] could not be found by accountreference [$($actionContext.References.Account)] and is possibly deleted"
                     IsError = $true
                 })
-            throw "Possibly deleted"
+            throw "AccountNotFound"
         }
         throw $_
     }
@@ -174,13 +175,14 @@ try {
         exportTimelineEvents = $currentAccount.exportTimelineEvents
     }
 
-    # Set Username to existing (case-sensitive in Ysis)
+    # Extra logic needs to be implemented when the username needs to be renamed when updating
+    # Set Username to existing if it already exists (case-sensitive in Ysis)
     # if ($account.userName -ieq $currentAccount.userName) {
     #     $account.userName = $currentAccount.userName
     # }
-    $account.userName = $currentAccount.userName
-    # Ysis account model mapping    # Discipline is immutable, so set Discipline to existing. When discipline is changed, notification will be send.
+    $account.userName = $currentAccount.userName # Do not rename the username
 
+    # Ysis account model mapping    # Discipline is immutable, so set Discipline to existing. When discipline is changed, notification will be send.
     $ysisAccount = [PSCustomObject]@{
         schemas                                                      = @('urn:ietf:params:scim:schemas:core:2.0:User', 'urn:ietf:params:scim:schemas:extension:ysis:2.0:User', 'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User')
         userName                                                     = $account.UserName
@@ -201,13 +203,13 @@ try {
         phoneNumbers                                                 = @(
             [PSCustomObject]@{
                 type  = 'work'
-                #value = $account.WorkPhone
-                value = (($currentAccount.phoneNumbers) | where-object  type -eq "work").value
+                #value = $account.WorkPhone # Use value from mapping
+                value = (($currentAccount.phoneNumbers) | where-object  type -eq "work").value # Use current value in Ysis
             },
             [PSCustomObject]@{
                 type  = 'mobile'
-                #value = $account.MobilePhone
-                value = (($currentAccount.phoneNumbers) | where-object  type -eq "mobile").value
+                #value = $account.MobilePhone # Use value from mapping
+                value = (($currentAccount.phoneNumbers) | where-object  type -eq "mobile").value # Use current value in Ysis
             }
         )
         roles                                                        = $currentAccount.roles
@@ -215,11 +217,11 @@ try {
         'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'       = [PSCustomObject]@{
             ysisInitials = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials
             discipline   = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline
-            #agbCode      = $account.AgbCode
-            agbCode       = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.agbCode
+            #agbCode      = $account.AgbCode # Use value from mapping
+            agbCode       = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.agbCode # Use current value in Ysis
             initials     = $account.Initials
-            #bigNumber    = $account.BigNumber
-            bigNumber     = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.bigNumber
+            #bigNumber    = $account.BigNumber # Use value from mapping
+            bigNumber     = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.bigNumber # Use current value in Ysis
             position     = $account.Position
             modules      = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.modules
         }
@@ -228,21 +230,11 @@ try {
         }
     }
 
-    # #if not mapped use current value:
-    # if (-NOT [bool]($account.PSobject.Properties.name -match "agbCode")) {
-    #     $ysisaccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.agbCode = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.agbCode
-    # }
-
-    # #if not mapped use current value:
-    # if (-NOT [bool]($account.PSobject.Properties.name -match "bigNumber")) {
-    #     $ysisaccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.bigNumber = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.bigNumber
-    # }
-
     if ([string]::IsNullOrEmpty($account.Discipline)) {
         Write-Warning "Discipline mapping not found for [$($account.Position)] [$disciplineSearchValue]"
         $outputContext.AuditLogs.Add([PSCustomObject]@{
             Action  = "UpdateAccount"
-            Message = "Failed to update account [$($account.UserName)]: No entry found in discipline mapping for title: [$($account.Position)] with externalId: [$disciplineSearchValue]"
+            Message = "Failed to update account [$($account.UserName)]: No entry found in discipline mapping for title [$($account.Position)] with externalId [$disciplineSearchValue]"
             IsError = $true
         })
     }
@@ -251,7 +243,7 @@ try {
         Write-Warning "Multiple discipline-mappings found for [$($account.Position)] [$disciplineSearchValue]"
         $outputContext.AuditLogs.Add([PSCustomObject]@{
             Action  = "UpdateAccount"
-            Message = "Failed to update account [$($account.UserName)]: Multiple entries found in discipline mapping for title: [$($account.Position)] with externalId: [$disciplineSearchValue]"
+            Message = "Failed to update account [$($account.UserName)]: Multiple entries found in discipline mapping for title [$($account.Position)] with externalId [$disciplineSearchValue]: [$($mappedObject.Discipline -join ", ")]"
             IsError = $true
         })
     }
@@ -278,7 +270,7 @@ try {
             Body        = $ysisaccount | ConvertTo-Json
             ContentType = 'application/scim+json;charset=UTF-8'
         }
-        if (-Not($actionContext.DryRun -eq $true)) { 
+        if (-Not($actionContext.DryRun -eq $true)) {
             $null = Invoke-RestMethod @splatUpdateUserParams -Verbose:$false
         }
         else {
@@ -292,18 +284,12 @@ try {
             })
     }
     else {
-        Write-Verbose "No Updates for Ysis account with accountReference: [$($actionContext.References.Account)]"
-        # Do not log this
-        #$outputContext.AuditLogs.Add([PSCustomObject]@{
-        #        Action  = "UpdateAccount"
-        #        Message = "Account with username $($account.userName) has no updates"
-        #        IsError = $false
-        #    })
+        Write-Warning "No Updates for Ysis account with username [$($account.userName)] and accountReference [$($actionContext.References.Account)]"
     }
 }
 catch {
     $ex = $PSItem
-    if (-Not($ex.Exception.Message -eq 'Possibly deleted'-or $ex.Exception.Message -eq 'Error(s) occured while looking up required values')) {
+    if (-Not($ex.Exception.Message -eq 'AccountNotFound'-or $ex.Exception.Message -eq 'Error(s) occured while looking up required values')) {
         if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
             $errorObj = Resolve-YsisError -ErrorObject $ex
             $auditMessage = "Could not update Ysis account. Error: $($errorObj.FriendlyMessage)"

@@ -5,7 +5,7 @@
 
 # Initialize default values
 $config = $actionContext.Configuration
-$p = $personContext.Person
+$person = $personContext.Person
 
 # Enable TLS1.2
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
@@ -56,12 +56,6 @@ function Resolve-YsisError {
 
 try {
     if ([string]::IsNullOrEmpty($($actionContext.References.Account))) {
-        $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "EnableAccount"
-                Message = "The account reference could not be found"
-                IsError = $true
-            }
-        )
         throw "The account reference could not be found"
     }
 
@@ -84,7 +78,7 @@ try {
     $headers.Add('Accept', 'application/json')
     $headers.Add('Content-Type', 'application/json')
 
-    Write-Verbose "Verifying if Ysis account for [$($p.DisplayName)] exists"
+    Write-Verbose "Verifying if Ysis account for [$($person.DisplayName)] exists"
     try {
         $splatParams = @{
             Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
@@ -95,20 +89,21 @@ try {
     }
     catch {
         if ($_.Exception.Response.StatusCode -eq 404) {
+            Write-Warning "Ysis account for [$($person.DisplayName)] could not be found by accountreference [$($actionContext.References.Account)] and is possibly deleted. To create or correlate a new account, unmanage the account entitlement and rerun an enforcement"
             $outputContext.AuditLogs.Add([PSCustomObject]@{
-                    Action  = "EnableAccount" # Optionally specify a different action for this audit log
-                    Message = "Ysis account for [$($p.DisplayName)] not found. Possibly deleted"
+                    Action  = "EnableAccount"
+                    Message = "Ysis account for [$($person.DisplayName)] could not be found by accountreference [$($actionContext.References.Account)] and is possibly deleted"
                     IsError = $true
                 })
-            throw "Possibly deleted"
+            throw "AccountNotFound"
         }
         throw $_
     }
 
     if ($actionContext.DryRun -eq $true) {
         $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "EnableAccount" # Optionally specify a different action for this audit log
-                Message = "Account [$($p.DisplayName)] with username [$($responseUser.userName)] will be enabled"
+                Action  = "EnableAccount"
+                Message = "[DryRun] Account [$($person.DisplayName)] with username [$($responseUser.userName)] will be enabled"
                 IsError = $false
             })
     }
@@ -127,15 +122,15 @@ try {
         $null = Invoke-RestMethod @splatParams -Verbose:$false
 
         $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "EnableAccount" # Optionally specify a different action for this audit log
-                Message = "Account [$($p.DisplayName)] with reference  $($actionContext.References.Account) enabled"
+                Action  = "EnableAccount"
+                Message = "Account [$($person.DisplayName)] with reference  $($actionContext.References.Account) enabled"
                 IsError = $false
             })
     }
 }
 catch {
     $ex = $PSItem
-    if (-Not($ex.Exception.Message -eq 'Possibly deleted')) {
+    if (-Not($ex.Exception.Message -eq 'AccountNotFound')) {
         if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
             $errorObj = Resolve-YsisError -ErrorObject $ex
             $auditMessage = "Could not enable Ysis account. Error: $($errorObj.FriendlyMessage)"
@@ -157,6 +152,7 @@ finally {
     if (-not($outputContext.AuditLogs.IsError -contains $true)) {
         $outputContext.Success = $true
     }
+
     # Retrieve account information for notifications
     # $outputContext.PreviousData.ExternalId = $personContext.References.Account
     # $outputContext.Data.UserName    = $actionContext.Data.UserName
