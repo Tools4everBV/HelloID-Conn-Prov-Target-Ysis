@@ -33,7 +33,8 @@ function Resolve-YsisError {
         }
         if (-not [string]::IsNullOrEmpty($ErrorObject.ErrorDetails.Message)) {
             $httpErrorObj.ErrorDetails = $ErrorObject.ErrorDetails.Message
-        } elseif ($ErrorObject.Exception.GetType().FullName -eq 'System.Net.WebException') {
+        }
+        elseif ($ErrorObject.Exception.GetType().FullName -eq 'System.Net.WebException') {
             if ($null -ne $ErrorObject.Exception.Response) {
                 $streamReaderResponse = [System.IO.StreamReader]::new($ErrorObject.Exception.Response.GetResponseStream()).ReadToEnd()
                 if (-not [string]::IsNullOrEmpty($streamReaderResponse)) {
@@ -46,7 +47,8 @@ function Resolve-YsisError {
             # Make sure to inspect the error result object and add only the error message as a FriendlyMessage.
             # $httpErrorObj.FriendlyMessage = $errorDetailsObject.message
             $httpErrorObj.FriendlyMessage = $httpErrorObj.ErrorDetails # Temporarily assignment
-        } catch {
+        }
+        catch {
             $httpErrorObj.FriendlyMessage = $httpErrorObj.ErrorDetails
         }
         Write-Output $httpErrorObj
@@ -55,8 +57,8 @@ function Resolve-YsisError {
 
 function Get-AccountRoles {
     [cmdletbinding()]
-    Param ()    
-    try{
+    Param ()
+    try {
         Write-Verbose 'Adding Authorization headers'
         $headers = [System.Collections.Generic.Dictionary[string, string]]::new()
         $headers.Add('Authorization', "Bearer $($responseAccessToken.access_token)")
@@ -72,7 +74,8 @@ function Get-AccountRoles {
         }
         $roles = Invoke-RestMethod @splatRoleParams -Verbose:$true
 
-    }catch{
+    }
+    catch {
         Write-Warning "$($_)"
         throw "Failed retrieving roles - $($_)"
     }
@@ -103,7 +106,7 @@ try {
             @{
                 DisplayName    = "Role: $($r.displayName)"
                 Identification = @{
-                    Reference = $r.value
+                    Reference   = $r.value
                     DisplayName = "Role: $($r.displayName)"
                 }
             }
@@ -111,7 +114,7 @@ try {
     }
 }
 catch {
-   $ex = $PSItem
+    $ex = $PSItem
     if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
         $errorObj = Resolve-YsisError -ErrorObject $ex
         Write-Warning "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
