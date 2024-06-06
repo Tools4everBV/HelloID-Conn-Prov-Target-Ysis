@@ -41,7 +41,7 @@ Ysis provides a set of SCIM (http://www.simplecloud.info) based API's. The Hello
 | /gm/api/um/scim/v2/users | Search, create or update an account; assign or remove modules or roles to account |
 | /gm/api/um/scim/v2/roles | Get role data; default roles and custom roles |
  
-The API has a limitation requiring the complete account object to be sent when updating an account. For further details, refer to the Ysis SCIM documentation: Ysis SCIM Documentation. (https://apihelp.gerimedica.nl/category/scim/
+The API has a limitation requiring the complete account object to be sent when updating an account. For further details, refer to the Ysis SCIM documentation: Ysis SCIM Documentation. (https://apihelp.gerimedica.nl/category/scim/).
 
 > [!IMPORTANT]
 Changing the discipline of an existing account is not supported. If a discipline change is attempted during the update life-cycle, a conditional event is triggered, sending an email notification to the Ysis administrator.
@@ -85,7 +85,7 @@ The following lifecycle action scripts and supporting files are available:
 
 ### Correlation configuration
 
-The correlation configuration is used to specify which properties will be used to match an existing account within _HelloID-Conn-Prov-Target-Ysis to a person in _HelloID_.
+The correlation configuration is used to specify which properties will be used to match an existing account within _HelloID-Conn-Prov-Target-Ysis to a person in _HelloID_. Correlation within Ysis only possible  on the attribute 'employeeNumber'.
 
     | Setting                   | Value            |
     | ------------------------- | ---------------- |
