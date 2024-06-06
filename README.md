@@ -43,7 +43,8 @@ Ysis provides a set of SCIM (http://www.simplecloud.info) based API's. The Hello
  
 The API has a limitation requiring the complete account object to be sent when updating an account. For further details, refer to the Ysis SCIM documentation: Ysis SCIM Documentation. (https://apihelp.gerimedica.nl/category/scim/
 
-> [!IMPORTANT] Changing the discipline of an existing account is not supported. If a discipline change is attempted during the update life-cycle, a conditional event is triggered, sending an email notification to the Ysis administrator.
+> [!IMPORTANT]
+Changing the discipline of an existing account is not supported. If a discipline change is attempted during the update life-cycle, a conditional event is triggered, sending an email notification to the Ysis administrator.
 - In Ysis each account is assigned a discipline that serves as the account type.
 - If a user requires a different or additional discipline, a new account must be created with the desired discipline. This process involves manual actions by the Ysis administrator.
 
@@ -109,7 +110,6 @@ The following settings are required to connect to the API.
 | ClientID                | The ClientId to connect to the Ysis API                                       |
 | ClientSecret            | The ClientSecret to connect to the Ysis API                                   |
 | BaseUrl                 | The URL to the Ysis environment. Example: https://company.acceptatie2.ysis.nl |
-| DefaultModule           | The default module code. Default value: `YSIS_CORE`                           |
 | MappingFile             | The mapping between function and discipline                                   |
 | UpdatePersonOnCorrelate | This will update the account in the target application during correlation     |
 | UpdateUsernameOnDelete  | Update username to the YsisIntials when archiving Ysis account                |
@@ -152,7 +152,7 @@ A conditional event needs to be set up based on changes of the discipline. On th
 
 > [!TIP]
 > How to configure:
-> 1. Make sure `Discipline` is added in the field mapping and the option `Use in notifications` is on.
+> 1. Make sure `Discipline` is added in the field mapping.
 > 2. Go to Business Custom events, create a new custom event. Select the Ysis connector, action `Account update` and add a condition with field `Discipline` is updated.
 > 3. Go to Notifications Configuration, create a new notification. Select your Ysis custom event. Import the [_conditional-notification.mjml_](./conditional-notification.mjml) template.
 >
