@@ -353,7 +353,7 @@ try {
                     $responseCreateUser = Invoke-RestMethod @splatCreateUserParams -Verbose:$false
                 }
                 else {
-                    Write-Warning "Will send: $($splatCreateUserParams.Body)"
+                    Write-Warning "[DryRun] Will send: $($splatCreateUserParams.Body)"
                 }
                 $uniqueness = $true
 
@@ -369,11 +369,11 @@ try {
             catch {
                 $ex = $PSItem
                 $errorObj = Resolve-YsisError -ErrorObject $ex
-                Write-Warning "$Iterator : $($_.Exception.Response.StatusCode) - $($errorObj.FriendlyMessage)"
+                Write-Verbose "$Iterator : $($_.Exception.Response.StatusCode) - $($errorObj.FriendlyMessage)"
 
                 if ($_.Exception.Response.StatusCode -eq 'Conflict' -and $($errorObj.FriendlyMessage) -match "A user with the 'ysisInitials'") {
                     $Iterator++
-                    Write-Warning "Ysis-Initials in use, trying with [$($account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)]"
+                    Write-Warning "Ysis-Initials in use, trying with [$($ysisAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)]"
                 }
                 else {
                     throw $_
@@ -382,11 +382,10 @@ try {
         } while ($uniqueness -ne $true -and $Iterator -lt $maxIterations)
 
         if (-not($uniqueness -eq $true)) {
-            throw "A user with the 'ysisInitials' '$($account.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)' already exists. YSIS-Initials out of iterations"
+            throw "A user with the 'ysisInitials' '$($ysisAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)' already exists. YSIS-Initials out of iterations"
         }
 
         if ($actionContext.DryRun -eq $true) {
-
             Write-Warning "[DryRun] Account with username [$($account.UserName)] and discipline [$($mappedObject.Discipline)] will be created."
             $outputContext.AuditLogs.Add([PSCustomObject]@{
                     Action  = "CreateAccount"

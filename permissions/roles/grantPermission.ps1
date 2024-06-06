@@ -108,11 +108,11 @@ try {
                     Message = "Unable to assign permission [$($actionContext.References.Permission.DisplayName)]. Ysis account for [$($person.DisplayName)] not found. Account is possibly deleted" # Todo error message
                     IsError = $true
                 })
-            throw "Possibly deleted"
+            throw "AccountNotFound"
         }
         throw $_
     }
-    
+
     Write-Verbose "Pre: all assigned roles ($($responseUser.roles.count)): $($responseUser.roles.displayName -join ", ")"
     if ($actionContext.DryRun -eq $true) {
         Write-Information "[DryRun] Grant Ysis entitlement: [$($actionContext.References.Permission.displayName)], will be executed during enforcement"

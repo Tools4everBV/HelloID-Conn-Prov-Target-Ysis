@@ -104,11 +104,10 @@ try {
     catch {
         if ($_.Exception.Response.StatusCode -eq 404) {
             $outputContext.AuditLogs.Add([PSCustomObject]@{
-                    Action  = "GrantPermission"
-                    Message = "Unable to assign permission [$($actionContext.References.Permission.displayName)]. Ysis account for [$($person.DisplayName)] not found. Possibly deleted" # Todo error message
-                    IsError = $true
+                    Message = "Unable to revoke permission [$($actionContext.References.Permission.displayName)]. Ysis account for [$($person.DisplayName)] not found. Possibly deleted"
+                    IsError = $false
                 })
-            throw "Possibly deleted"
+            throw "AccountNotFound"
         }
         throw $_
     }
@@ -151,18 +150,20 @@ try {
 }
 catch {
     $ex = $PSItem
-    if ($($ex.Exception.GetType().FullName -eq 'Microsoft.PowerShell.Commands.HttpResponseException') -or
-        $($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
-        $errorObj = Resolve-YsisError -ErrorObject $ex
-        $auditMessage = "Could not revoke Ysis permission [$($actionContext.References.Permission.DisplayName)]. Error: $($errorObj.FriendlyMessage)"
-        Write-Warning "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
+    if (-Not($ex.Exception.Message -eq 'AccountNotFound')) {
+        if ($($ex.Exception.GetType().FullName -eq 'Microsoft.PowerShell.Commands.HttpResponseException') -or
+            $($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
+            $errorObj = Resolve-YsisError -ErrorObject $ex
+            $auditMessage = "Could not revoke Ysis permission [$($actionContext.References.Permission.DisplayName)]. Error: $($errorObj.FriendlyMessage)"
+            Write-Warning "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
+        }
+        else {
+            $auditMessage = "Could not revoke Ysis permission [$($actionContext.References.Permission.DisplayName)]. Error: $($_.Exception.Message)"
+            Write-Warning "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
+        }
+        $outputContext.AuditLogs.Add([PSCustomObject]@{
+                Message = $auditMessage
+                IsError = $true
+            })
     }
-    else {
-        $auditMessage = "Could not revoke Ysis permission [$($actionContext.References.Permission.DisplayName)]. Error: $($_.Exception.Message)"
-        Write-Warning "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
-    }
-    $outputContext.AuditLogs.Add([PSCustomObject]@{
-            Message = $auditMessage
-            IsError = $true
-        })
 }

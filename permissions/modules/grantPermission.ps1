@@ -108,7 +108,7 @@ try {
                     Message = "Unable to assign permission [$($actionContext.References.Permission.displayName)]. Ysis account for [$($person.DisplayName)] not found. Account is possibly deleted" # Todo error message
                     IsError = $true
                 })
-            throw "Possibly deleted"
+            throw "AccountNotFound"
         }
         throw $_
     }

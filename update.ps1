@@ -188,7 +188,6 @@ try {
     $ysisAccount = [PSCustomObject]@{
         schemas                                                      = @('urn:ietf:params:scim:schemas:core:2.0:User', 'urn:ietf:params:scim:schemas:extension:ysis:2.0:User', 'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User')
         userName                                                     = $account.UserName
-        # userName                                                     = $currentAccount.UserName
         name                                                         = [PSCustomObject]@{
             familyName = $account.FamilyName
             givenName  = $account.GivenName
