@@ -74,7 +74,6 @@ try {
 
     $responseAccessToken = Invoke-RestMethod @splatRequestToken -Verbose:$false
 
-    Write-Verbose 'Adding Authorization headers'
     $headers = [System.Collections.Generic.Dictionary[string, string]]::new()
     $headers.Add('Authorization', "Bearer $($responseAccessToken.access_token)")
     $headers.Add('Accept', 'application/json')
