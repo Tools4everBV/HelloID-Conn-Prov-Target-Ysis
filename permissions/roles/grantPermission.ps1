@@ -112,45 +112,42 @@ try {
         }
         throw $_
     }
-
+    
+    # Process
     Write-Verbose "Pre: all assigned roles ($($responseUser.roles.count)): $($responseUser.roles.displayName -join ", ")"
-    if ($actionContext.DryRun -eq $true) {
-        Write-Information "[DryRun] Grant Ysis entitlement: [$($actionContext.References.Permission.displayName)], will be executed during enforcement"
-        $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Message = "[DryRun] Grant permission [$($actionContext.References.Permission.DisplayName)] was successful"
-                IsError = $false
+    Write-Information "Granting Ysis entitlement: [$($actionContext.References.Permission.DisplayName)]"
+    if ($responseUser.roles.count -eq 0 -or $actionContext.References.Permission.Reference -notin $responseUser.roles.value) {
+        $responseUser.roles += ([PSCustomObject]@{
+                value       = $actionContext.References.Permission.Reference
+                displayName = $actionContext.References.Permission.DisplayName
             })
-        $outputContext.Success = $true
-    }
-    else {
-        # Process
-        Write-Information "Granting Ysis entitlement: [$($actionContext.References.Permission.DisplayName)]"
-        if ($responseUser.roles.count -eq 0 -or $actionContext.References.Permission.Reference -notin $responseUser.roles.value) {
-            $responseUser.roles += ([PSCustomObject]@{
-                    value       = $actionContext.References.Permission.Reference
-                    displayName = $actionContext.References.Permission.DisplayName
-                })
 
-            $splatParams = @{
-                Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
-                Headers     = $headers
-                Method      = 'PUT'
-                Body        = ($responseUser | ConvertTo-Json -Depth 10)
-                ContentType = 'application/scim+json;charset=UTF-8'
-            }
-            $null = Invoke-RestMethod @splatParams -Verbose:$false
-            Write-Verbose "Post: all assigned roles ($($responseUser.roles.count)): $($responseUser.roles.displayName -join ", ")"
+        $splatParams = @{
+            Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
+            Headers     = $headers
+            Method      = 'PUT'
+            Body        = ($responseUser | ConvertTo-Json -Depth 10)
+            ContentType = 'application/scim+json;charset=UTF-8'
+        }
+
+        if ($actionContext.DryRun -eq $true) {
+            Write-Warning "[DryRun] Will send: $($splatParams.Body)"
         }
         else {
-            Write-Warning "Permission [($($actionContext.References.Permission.DisplayName))] was already assigned in Ysis"
+            $null = Invoke-RestMethod @splatParams -Verbose:$false
         }
 
-        $outputContext.Success = $true
-        $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Message = "Grant permission [$($actionContext.References.Permission.DisplayName)] was successful"
-                IsError = $false
-            })
+        Write-Verbose "Post: all assigned roles ($($responseUser.roles.count)): $($responseUser.roles.displayName -join ", ")"
     }
+    else {
+        Write-Warning "Permission [($($actionContext.References.Permission.DisplayName))] was already assigned in Ysis"
+    }
+
+    $outputContext.Success = $true
+    $outputContext.AuditLogs.Add([PSCustomObject]@{
+            Message = "Grant permission [$($actionContext.References.Permission.DisplayName)] was successful"
+            IsError = $false
+        })
 }
 catch {
     $ex = $PSItem

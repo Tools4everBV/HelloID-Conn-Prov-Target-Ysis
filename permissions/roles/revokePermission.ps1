@@ -32,7 +32,8 @@ function Resolve-YsisError {
         }
         if (-not [string]::IsNullOrEmpty($ErrorObject.ErrorDetails.Message)) {
             $httpErrorObj.ErrorDetails = $ErrorObject.ErrorDetails.Message
-        } elseif ($ErrorObject.Exception.GetType().FullName -eq 'System.Net.WebException') {
+        }
+        elseif ($ErrorObject.Exception.GetType().FullName -eq 'System.Net.WebException') {
             if ($null -ne $ErrorObject.Exception.Response) {
                 $streamReaderResponse = [System.IO.StreamReader]::new($ErrorObject.Exception.Response.GetResponseStream()).ReadToEnd()
                 if (-not [string]::IsNullOrEmpty($streamReaderResponse)) {
@@ -47,7 +48,8 @@ function Resolve-YsisError {
             $errorDetailsObject = ($httpErrorObj.ErrorDetails | ConvertFrom-Json)
             $httpErrorObj.ErrorDetails = "Message: $($errorDetailsObject.detail), type: $($errorDetailsObject.scimType)"
             $httpErrorObj.FriendlyMessage = "$($errorDetailsObject.detail), type: $($errorDetailsObject.scimType)"
-        } catch {
+        }
+        catch {
             $httpErrorObj.FriendlyMessage = $httpErrorObj.ErrorDetails
         }
         Write-Output $httpErrorObj
@@ -112,41 +114,38 @@ try {
         throw $_
     }
 
+    # Process
     Write-Verbose "Pre: all assigned roles ($($responseUser.roles.count)): $($responseUser.roles.displayName -join ", ")"
-    if ($actionContext.DryRun -eq $true) {
-        Write-Information "[DryRun] Revoke Ysis entitlement: [$($actionContext.References.Permission.DisplayName)], will be executed during enforcement"
-        $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Message = "[DryRun] Revoke permission [$($actionContext.References.Permission.DisplayName)] was successful"
-                IsError = $false
-            })
-        $outputContext.Success = $true
-    }
-    else {
-        Write-Information "Revoking Ysis entitlement: [$($actionContext.References.Permission.DisplayName)]"
+    Write-Information "Revoking Ysis entitlement: [$($actionContext.References.Permission.DisplayName)]"
 
-        if ($responseUser.roles.count -gt 0 -and $actionContext.References.Permission.Reference -in $responseUser.roles.value) {
-            [Array]$responseUser.roles = $responseUser.roles | Where-Object { $_.value -notcontains $actionContext.References.Permission.Reference }
+    if ($responseUser.roles.count -gt 0 -and $actionContext.References.Permission.Reference -in $responseUser.roles.value) {
+        [Array]$responseUser.roles = $responseUser.roles | Where-Object { $_.value -notcontains $actionContext.References.Permission.Reference }
 
-            $splatParams = @{
-                Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
-                Headers     = $headers
-                Method      = 'PUT'
-                Body        = $responseUser | ConvertTo-Json
-                ContentType = 'application/scim+json;charset=UTF-8'
-            }
-            $null = Invoke-RestMethod @splatParams -Verbose:$false
-            Write-Verbose "Post: all assigned roles ($($responseUser.roles.count)): $($responseUser.roles.displayName -join ", ")"
+        $splatParams = @{
+            Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
+            Headers     = $headers
+            Method      = 'PUT'
+            Body        = $responseUser | ConvertTo-Json
+            ContentType = 'application/scim+json;charset=UTF-8'
+        }
+        if ($actionContext.DryRun -eq $true) {
+            Write-Warning "[DryRun] Will send: $($splatParams.Body)"
         }
         else {
-            write-information "Permission [$($actionContext.References.Permission.DisplayName)] is already revoked"
+            $null = Invoke-RestMethod @splatParams -Verbose:$false
         }
-
-        $outputContext.Success = $true
-        $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Message = "Revoke permission [$($actionContext.References.Permission.DisplayName)] was successful"
-                IsError = $false
-            })
+            
+        Write-Verbose "Post: all assigned roles ($($responseUser.roles.count)): $($responseUser.roles.displayName -join ", ")"
     }
+    else {
+        Write-Warning "Permission [$($actionContext.References.Permission.DisplayName)] is already revoked"
+    }
+
+    $outputContext.Success = $true
+    $outputContext.AuditLogs.Add([PSCustomObject]@{
+            Message = "Revoke permission [$($actionContext.References.Permission.DisplayName)] was successful"
+            IsError = $false
+        })
 }
 catch {
     $ex = $PSItem

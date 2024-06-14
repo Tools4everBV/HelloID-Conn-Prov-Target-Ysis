@@ -32,7 +32,8 @@ function Resolve-YsisError {
         }
         if (-not [string]::IsNullOrEmpty($ErrorObject.ErrorDetails.Message)) {
             $httpErrorObj.ErrorDetails = $ErrorObject.ErrorDetails.Message
-        } elseif ($ErrorObject.Exception.GetType().FullName -eq 'System.Net.WebException') {
+        }
+        elseif ($ErrorObject.Exception.GetType().FullName -eq 'System.Net.WebException') {
             if ($null -ne $ErrorObject.Exception.Response) {
                 $streamReaderResponse = [System.IO.StreamReader]::new($ErrorObject.Exception.Response.GetResponseStream()).ReadToEnd()
                 if (-not [string]::IsNullOrEmpty($streamReaderResponse)) {
@@ -47,7 +48,8 @@ function Resolve-YsisError {
             $errorDetailsObject = ($httpErrorObj.ErrorDetails | ConvertFrom-Json)
             $httpErrorObj.ErrorDetails = "Message: $($errorDetailsObject.detail), type: $($errorDetailsObject.scimType)"
             $httpErrorObj.FriendlyMessage = "$($errorDetailsObject.detail), type: $($errorDetailsObject.scimType)"
-        } catch {
+        }
+        catch {
             $httpErrorObj.FriendlyMessage = $httpErrorObj.ErrorDetails
         }
         Write-Output $httpErrorObj
@@ -113,41 +115,37 @@ try {
         throw $_
     }
 
+    # Process
     Write-Verbose "Pre: all assigned modules ($($responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.modules.count)): $($responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.modules -join ", ")"
-    if ($actionContext.DryRun -eq $true) {
-        Write-Information "[DryRun] Grant Ysis entitlement: [$($actionContext.References.Permission.displayName)], will be executed during enforcement"
-        $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Message = "[DryRun] Grant permission [$($actionContext.References.Permission.DisplayName)] was successful"
-                IsError = $false
-            })
-        $outputContext.Success = $true
-    }
-    else {
-        # Process
-        Write-Information "Granting Ysis entitlement: [$($actionContext.References.Permission.DisplayName)]"
-        if ($responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.modules.count -eq 0 -or $actionContext.References.Permission.Reference -notin $responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.modules) {
-            $responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.modules += $actionContext.References.Permission.Reference
+    Write-Information "Granting Ysis entitlement: [$($actionContext.References.Permission.DisplayName)]"
+    if ($responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.modules.count -eq 0 -or $actionContext.References.Permission.Reference -notin $responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.modules) {
+        $responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.modules += $actionContext.References.Permission.Reference
 
-            $splatParams = @{
-                Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
-                Headers     = $headers
-                Method      = 'PUT'
-                Body        = ($responseUser | ConvertTo-Json -Depth 10)
-                ContentType = 'application/scim+json;charset=UTF-8'
-            }
-            $null = Invoke-RestMethod @splatParams -Verbose:$false
-            Write-Verbose "Post: all assigned modules ($($responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.modules.count)): $($responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.modules -join ", ")"
+        $splatParams = @{
+            Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
+            Headers     = $headers
+            Method      = 'PUT'
+            Body        = ($responseUser | ConvertTo-Json -Depth 10)
+            ContentType = 'application/scim+json;charset=UTF-8'
+        }
+
+        if ($actionContext.DryRun -eq $true) {
+            Write-Warning "[DryRun] Will send: $($splatParams.Body)"
         }
         else {
-            Write-Warning "Permission [($($actionContext.References.Permission.DisplayName))] was already assigned in Ysis"
+            $null = Invoke-RestMethod @splatParams -Verbose:$false
         }
-
-        $outputContext.Success = $true
-        $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Message = "Grant permission [$($actionContext.References.Permission.DisplayName)] was successful"
-                IsError = $false
-            })
+        Write-Verbose "Post: all assigned modules ($($responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.modules.count)): $($responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.modules -join ", ")"
     }
+    else {
+        Write-Warning "Permission [($($actionContext.References.Permission.DisplayName))] was already assigned in Ysis"
+    }
+
+    $outputContext.Success = $true
+    $outputContext.AuditLogs.Add([PSCustomObject]@{
+            Message = "Grant permission [$($actionContext.References.Permission.DisplayName)] was successful"
+            IsError = $false
+        })
 }
 catch {
     $ex = $PSItem

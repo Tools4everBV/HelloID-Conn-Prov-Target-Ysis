@@ -154,7 +154,7 @@ catch {
                 Message = "Could not delete Ysis account. Error: $($errorObj.FriendlyMessage)"
                 IsError = $true
             })
-        Write-Verbose "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
+        Write-Warning "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
     }
     else {
         $outputContext.AuditLogs.Add([PSCustomObject]@{
@@ -162,7 +162,7 @@ catch {
                 Message = "Could not delete Ysis account. Error: $($ex.Exception.Message)"
                 IsError = $true
             })
-        Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
+        Write-Warning "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
     }
 }
 finally {
