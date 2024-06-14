@@ -5,7 +5,6 @@
 
 # Initialize default values
 $config = $actionContext.Configuration
-$outputContext.success = $false
 
 # Enable TLS1.2
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
@@ -42,6 +41,7 @@ function Resolve-YsisError {
                 }
             }
         }
+        # todo: error handling
         try {
             $errorDetailsObject = ($httpErrorObj.ErrorDetails | ConvertFrom-Json)
             # Make sure to inspect the error result object and add only the error message as a FriendlyMessage.

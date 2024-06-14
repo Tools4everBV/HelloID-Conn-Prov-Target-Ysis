@@ -229,11 +229,11 @@ try {
             if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
                 $errorObj = Resolve-YsisError -ErrorObject $ex
                 $auditMessage = "Could not retrieve Ysis Token. Error: $($errorObj.FriendlyMessage)"
-                Write-Verbose "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
+                Write-Warning "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
             }
             else {
                 $auditMessage = "Could not retrieve Ysis Token. Error: $($ex.Exception.Message)"
-                Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
+                Write-Warning "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
             }
             $outputContext.AuditLogs.Add([PSCustomObject]@{
                     Action  = "CreateAccount"

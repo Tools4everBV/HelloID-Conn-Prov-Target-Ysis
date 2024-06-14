@@ -64,7 +64,6 @@ try {
         throw 'The account reference could not be found'
     }
 
-    # Requesting authorization token
     $splatRequestToken = @{
         Uri    = "$($config.BaseUrl)/cas/oauth/token"
         Method = 'POST'
@@ -82,18 +81,6 @@ try {
     $headers.Add('Accept', 'application/json; charset=utf-8')
     $headers.Add('Content-Type', 'application/json')
 
-    # Requesting authorization token
-    $splatRequestToken = @{
-        Uri    = "$($config.BaseUrl)/cas/oauth/token"
-        Method = 'POST'
-        Body   = @{
-            client_id     = $($config.ClientID)
-            client_secret = $($config.ClientSecret)
-            scope         = 'scim'
-            grant_type    = 'client_credentials'
-        }
-    }
-    $responseAccessToken = Invoke-RestMethod @splatRequestToken -Verbose:$false
     Write-Information "Verifying if a Ysis account for [$($personContext.Person.DisplayName)] exists"
     try {
         $splatParams = @{

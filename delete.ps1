@@ -6,7 +6,6 @@
 # Initialize default values
 $config = $actionContext.Configuration
 $person = $personContext.Person
-$outputContext.Success = $false
 
 # Enable TLS1.2
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12

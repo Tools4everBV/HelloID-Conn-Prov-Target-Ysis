@@ -73,6 +73,5 @@ $outputContext.Permissions.Add(
     }
 )
 
-# Delete default permission from list and sort op displayname
-# $outputContext.Permissions = $outputContext.Permissions | Where-Object {($_.Identification.Reference -ne $actionContext.Configuration.DefaultModule)} | Sort-Object DisplayName
+# Delete default permission from list and sort by displayname
 $outputContext.Permissions = $outputContext.Permissions | Sort-Object DisplayName
