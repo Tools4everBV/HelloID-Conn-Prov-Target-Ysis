@@ -18,38 +18,6 @@
       ]
     },
     {
-      "Name": "MobilePhone",
-      "Type": "Text",
-      "MappingActions": [
-        {
-          "MapForActions": [
-            "Create",
-            "Update"
-          ],
-          "MappingMode": "Field",
-          "Value": "\"Person.Contact.Business.Phone.Mobile\"",
-          "UsedInNotifications": false,
-          "StoreInAccountData": false
-        }
-      ]
-    },
-    {
-      "Name": "WorkPhone",
-      "Type": "Text",
-      "MappingActions": [
-        {
-          "MapForActions": [
-            "Create",
-            "Update"
-          ],
-          "MappingMode": "Field",
-          "Value": "\"Person.Contact.Business.Phone.Fixed\"",
-          "UsedInNotifications": false,
-          "StoreInAccountData": false
-        }
-      ]
-    },
-    {
       "Name": "Position",
       "Type": "Text",
       "MappingActions": [
@@ -76,6 +44,22 @@
           ],
           "MappingMode": "None",
           "Value": "null",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
+        }
+      ]
+    },
+    {
+      "Name": "Infix",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create",
+            "Update"
+          ],
+          "MappingMode": "Complex",
+          "Value": "\"function generateMiddleName() {\\r\\n \\r\\n \\r\\n    let middleName = Person.Name.FamilyNamePrefix;\\r\\n    let middleNamePartner = Person.Name.FamilyNamePartnerPrefix;\\r\\n    \\r\\n    let nameFormatted = \\\"\\\";\\r\\n \\r\\n    switch(Person.Name.Convention) {\\r\\n    case \\\"B\\\":\\r\\n    case \\\"BP\\\":\\r\\n        if (typeof middleName !== 'undefined' && middleName) { nameFormatted = middleName }\\r\\n        break;\\r\\n    case \\\"P\\\":\\r\\n    case \\\"PB\\\":\\r\\n        if (typeof middleNamePartner !== 'undefined' && middleNamePartner) { nameFormatted = middleNamePartner  }\\r\\n        break;    \\r\\n    default:\\r\\n        if (typeof middleName !== 'undefined' && middleName) { nameFormatted = middleName  }\\r\\n        break;\\r\\n    }\\r\\n    nameFormatted = nameFormatted.trim();\\r\\n \\r\\nreturn nameFormatted;\\r\\n}\\r\\ngenerateMiddleName()\"",
           "UsedInNotifications": false,
           "StoreInAccountData": false
         }
@@ -116,6 +100,23 @@
       ]
     },
     {
+      "Name": "FamilyName",
+      "Description": "[Mandatory]",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create",
+            "Update"
+          ],
+          "MappingMode": "Complex",
+          "Value": "\"function generateLastName() {\\r\\n \\r\\n \\r\\n    let middleName = Person.Name.FamilyNamePrefix;\\r\\n    let lastName = Person.Name.FamilyName;\\r\\n    let middleNamePartner = Person.Name.FamilyNamePartnerPrefix;\\r\\n    let lastNamePartner = Person.Name.FamilyNamePartner;\\r\\n \\r\\n    let nameFormatted = \\\"\\\";\\r\\n \\r\\n    switch(Person.Name.Convention) {\\r\\n    case \\\"B\\\":        \\r\\n        nameFormatted = lastName;\\r\\n        break;\\r\\n    case \\\"P\\\":\\r\\n        nameFormatted = lastNamePartner;\\r\\n        break;\\r\\n    case \\\"BP\\\":        \\r\\n        nameFormatted = lastName + ' - ';\\r\\n        if (typeof middleNamePartner !== 'undefined' && middleNamePartner) { nameFormatted = nameFormatted + middleNamePartner + ' ' }\\r\\n        nameFormatted = nameFormatted + lastNamePartner;\\r\\n        break;\\r\\n    case \\\"PB\\\":        \\r\\n        nameFormatted = lastNamePartner + ' - ';\\r\\n        if (typeof middleName !== 'undefined' && middleName) { nameFormatted = nameFormatted + middleName + ' ' }\\r\\n        nameFormatted = nameFormatted + lastName;\\r\\n        break;\\r\\n    default:        \\r\\n        nameFormatted = lastName;\\r\\n        break;\\r\\n    }\\r\\n    nameFormatted = nameFormatted.trim();\\r\\n \\r\\nreturn nameFormatted;\\r\\n}\\r\\ngenerateLastName()\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
+        }
+      ]
+    },
+    {
       "Name": "GivenName",
       "Description": "[Mandatory]",
       "Type": "Text",
@@ -133,34 +134,16 @@
       ]
     },
     {
-      "Name": "Initials",
+      "Name": "Password",
       "Description": "[Mandatory]",
       "Type": "Text",
       "MappingActions": [
         {
           "MapForActions": [
-            "Create",
-            "Update"
-          ],
-          "MappingMode": "Field",
-          "Value": "\"Person.Name.Initials\"",
-          "UsedInNotifications": false,
-          "StoreInAccountData": false
-        }
-      ]
-    },
-    {
-      "Name": "FamilyName",
-      "Description": "[Mandatory]",
-      "Type": "Text",
-      "MappingActions": [
-        {
-          "MapForActions": [
-            "Create",
-            "Update"
+            "Create"
           ],
           "MappingMode": "Complex",
-          "Value": "\"function generateLastName() {\\r\\n    let middleName = Person.Name.FamilyNamePrefix;\\r\\n    let lastName = Person.Name.FamilyName;\\r\\n    let middleNamePartner = Person.Name.FamilyNamePartnerPrefix;\\r\\n    let lastNamePartner = Person.Name.FamilyNamePartner;\\r\\n \\r\\n    let nameFormatted = \\\"\\\";\\r\\n \\r\\n    switch(Person.Name.Convention) {\\r\\n    case \\\"B\\\":        \\r\\n        nameFormatted = lastName;\\r\\n        break;\\r\\n    case \\\"P\\\":\\r\\n        nameFormatted = lastNamePartner;\\r\\n        break;\\r\\n    case \\\"BP\\\":        \\r\\n        nameFormatted = lastName + ' - ';\\r\\n        if (typeof middleNamePartner !== 'undefined' && middleNamePartner) { nameFormatted = nameFormatted + middleNamePartner + ' ' }\\r\\n        nameFormatted = nameFormatted + lastNamePartner;\\r\\n        break;\\r\\n    case \\\"PB\\\":        \\r\\n        nameFormatted = lastNamePartner + ' - ';\\r\\n        if (typeof middleName !== 'undefined' && middleName) { nameFormatted = nameFormatted + middleName + ' ' }\\r\\n        nameFormatted = nameFormatted + lastName;\\r\\n        break;\\r\\n    default:        \\r\\n        nameFormatted = lastName;\\r\\n        break;\\r\\n    }\\r\\n    nameFormatted = nameFormatted.trim();\\r\\n \\r\\n    return nameFormatted;\\r\\n}\\r\\n\\r\\ngenerateLastName()\"",
+          "Value": "\"function generatePassword(){\\r\\n     \\r\\n    // Initialize these variables for the algorithm to meet your password complexity rules\\r\\n    const passwordLength = 12;\\r\\n    const minUpper = 1;\\r\\n    const maxUpper = 3;\\r\\n    const minNumeric = 0;\\r\\n    const maxNumeric = 2;\\r\\n    const minSpecial = 1;\\r\\n    const maxSpecial = 1;\\r\\n     \\r\\n     \\r\\n    // Do not change any code below this line !!!\\r\\n     \\r\\n    const numberUpper = Math.floor((Math.random() * maxUpper) + minUpper);\\r\\n    const numberNumeric = Math.floor((Math.random() * maxNumeric) + minNumeric);\\r\\n    const numberSpecial = Math.floor((Math.random() * maxSpecial) + minSpecial);\\r\\n    const numberLower = passwordLength - (numberUpper + numberNumeric + numberSpecial);\\r\\n                 \\r\\n    let upperChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';\\r\\n    let lowerChars = 'abcdefghijklmnopqrstuvwxyz';\\r\\n    let numberChars = '0123456789';\\r\\n    let specialChars = '!#$@*?';\\r\\n     \\r\\n    let getRandomValue = function(values) {\\r\\n        return values.charAt(Math.floor(Math.random() * values.length));\\r\\n    };\\r\\n     \\r\\n    let password = [];\\r\\n    for(let i = 0; i < numberNumeric; ++i) { password.push(getRandomValue(numberChars)) }\\r\\n    for(let i = 0; i < numberUpper; ++i) { password.push(getRandomValue(upperChars)) }\\r\\n    for(let i = 0; i < numberSpecial; ++i) { password.push(getRandomValue(specialChars)) }   \\r\\n    for(let i = 0; i < numberLower; ++i) { password.push(getRandomValue(lowerChars)) }\\r\\n         \\r\\n    function randomizeCharSequence(passwordObject){\\r\\n        for(let j, x, i = passwordObject.length; i; j = Math.floor(Math.random() * i), x = passwordObject[--i], passwordObject[i] = passwordObject[j], passwordObject[j] = x);\\r\\n        return passwordObject;\\r\\n    }\\r\\n     \\r\\n    return randomizeCharSequence(password).join('');\\r\\n}\\r\\ngeneratePassword();\"",
           "UsedInNotifications": false,
           "StoreInAccountData": false
         }
@@ -176,55 +159,7 @@
             "Update"
           ],
           "MappingMode": "Complex",
-          "Value": "\"//YSIS only accepts one e-mailadress\\r\\nfunction getEmail(){   \\r\\n    let email = \\\"\\\" \\r\\n    if(typeof Person.Accounts.MicrosoftActiveDirectory.mail !== 'undefined' && Person.Accounts.MicrosoftActiveDirectory.mail) {        \\r\\n        email = Person.Accounts.MicrosoftActiveDirectory.mail\\r\\n    }   \\r\\n    return email\\r\\n}\\r\\n\\r\\ngetEmail()\"",
-          "UsedInNotifications": false,
-          "StoreInAccountData": false
-        }
-      ]
-    },
-    {
-      "Name": "Gender",
-      "Type": "Text",
-      "MappingActions": [
-        {
-          "MapForActions": [
-            "Create",
-            "Update"
-          ],
-          "MappingMode": "Complex",
-          "Value": "\"function getYsisGender() {\\r\\n    switch (Person.Details.Gender) {\\r\\n        case \\\"V\\\": return \\\"FEMALE\\\"\\r\\n        case \\\"M\\\": return \\\"MALE\\\"\\r\\n        default: return\\\"UNKNOWN\\\"\\r\\n    }    \\r\\n}\\r\\n\\r\\ngetYsisGender();\"",
-          "UsedInNotifications": false,
-          "StoreInAccountData": false
-        }
-      ]
-    },
-    {
-      "Name": "Infix",
-      "Type": "Text",
-      "MappingActions": [
-        {
-          "MapForActions": [
-            "Create",
-            "Update"
-          ],
-          "MappingMode": "Complex",
-          "Value": "\"function generateYsisInfix() {\\r\\n    let middleName = Person.Name.FamilyNamePrefix;\\r\\n    let middleNamePartner = Person.Name.FamilyNamePartnerPrefix;\\r\\n    \\r\\n    let nameFormatted = \\\"\\\";\\r\\n \\r\\n    switch(Person.Name.Convention) {\\r\\n    case \\\"B\\\":\\r\\n    case \\\"BP\\\":\\r\\n        if (typeof middleName !== 'undefined' && middleName) { nameFormatted = middleName }\\r\\n        break;\\r\\n    case \\\"P\\\":\\r\\n    case \\\"PB\\\":\\r\\n        if (typeof middleNamePartner !== 'undefined' && middleNamePartner) { nameFormatted = middleNamePartner  }\\r\\n        break;    \\r\\n    default:\\r\\n        if (typeof middleName !== 'undefined' && middleName) { nameFormatted = middleName  }\\r\\n        break;\\r\\n    }\\r\\n    nameFormatted = nameFormatted.trim();\\r\\n \\r\\n    return nameFormatted;\\r\\n}\\r\\n\\r\\ngenerateYsisInfix()\"",
-          "UsedInNotifications": false,
-          "StoreInAccountData": false
-        }
-      ]
-    },
-    {
-      "Name": "Password",
-      "Description": "[Mandatory]",
-      "Type": "Text",
-      "MappingActions": [
-        {
-          "MapForActions": [
-            "Create"
-          ],
-          "MappingMode": "Complex",
-          "Value": "\"function generatePassword(){\\r\\n     \\r\\n    // Initialize these variables for the algorithm to meet your password complexity rules\\r\\n    const passwordLength = 12;\\r\\n    const minUpper = 1;\\r\\n    const maxUpper = 3;\\r\\n    const minNumeric = 0;\\r\\n    const maxNumeric = 2;\\r\\n    const minSpecial = 1;\\r\\n    const maxSpecial = 1;\\r\\n     \\r\\n     \\r\\n    // Do not change any code below this line !!!\\r\\n     \\r\\n    const numberUpper = Math.floor((Math.random() * maxUpper) + minUpper);\\r\\n    const numberNumeric = Math.floor((Math.random() * maxNumeric) + minNumeric);\\r\\n    const numberSpecial = Math.floor((Math.random() * maxSpecial) + minSpecial);\\r\\n    const numberLower = passwordLength - (numberUpper + numberNumeric + numberSpecial);\\r\\n                 \\r\\n    let upperChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';\\r\\n    let lowerChars = 'abcdefghijklmnopqrstuvwxyz';\\r\\n    let numberChars = '0123456789';\\r\\n    let specialChars = '!#$@*?';\\r\\n     \\r\\n    let getRandomValue = function(values) {\\r\\n        return values.charAt(Math.floor(Math.random() * values.length));\\r\\n    };\\r\\n     \\r\\n    let password = [];\\r\\n    for(let i = 0; i < numberNumeric; ++i) { password.push(getRandomValue(numberChars)) }\\r\\n    for(let i = 0; i < numberUpper; ++i) { password.push(getRandomValue(upperChars)) }\\r\\n    for(let i = 0; i < numberSpecial; ++i) { password.push(getRandomValue(specialChars)) }   \\r\\n    for(let i = 0; i < numberLower; ++i) { password.push(getRandomValue(lowerChars)) }\\r\\n         \\r\\n    function randomizeCharSequence(passwordObject){\\r\\n        for(let j, x, i = passwordObject.length; i; j = Math.floor(Math.random() * i), x = passwordObject[--i], passwordObject[i] = passwordObject[j], passwordObject[j] = x);\\r\\n        return passwordObject;\\r\\n    }\\r\\n     \\r\\n    return randomizeCharSequence(password).join('');\\r\\n}\\r\\n\\r\\ngeneratePassword();\"",
+          "Value": "\"//YSIS only accepts one e-mailadress\\r\\nfunction GetEmail(){   \\r\\n    let mail = \\\"\\\" \\r\\n    if(typeof Person.Accounts.MicrosoftActiveDirectory.mail !== 'undefined' && Person.Accounts.MicrosoftActiveDirectory.mail) {        \\r\\n        mail = Person.Accounts.MicrosoftActiveDirectory.mail\\r\\n    }   \\r\\n    return mail\\r\\n}\\r\\nGetEmail()\"",
           "UsedInNotifications": false,
           "StoreInAccountData": false
         }
@@ -241,8 +176,73 @@
             "Update"
           ],
           "MappingMode": "Complex",
-          "Value": "\"function getYsisUserName() {\\r\\n    let userName = '';\\r\\n    if (typeof Person.Accounts.MicrosoftActiveDirectory.userPrincipalName !== 'undefined' && Person.Accounts.MicrosoftActiveDirectory.userPrincipalName) {\\r\\n        userName = Person.Accounts.MicrosoftActiveDirectory.userPrincipalName;\\r\\n    }\\r\\n    return userName;\\r\\n}\\r\\n\\r\\ngetYsisUserName();\"",
+          "Value": "\"function userName() {\\r\\n    let upn = '';\\r\\n    if (typeof Person.Accounts.MicrosoftActiveDir.userPrincipalName !== 'undefined' && Person.Accounts.MicrosoftActiveDirectory.userPrincipalName) {\\r\\n        upn = Person.Accounts.MicrosoftActiveDirectory.userPrincipalName;\\r\\n    }\\r\\n    return upn;\\r\\n}\\r\\nuserName();\"",
           "UsedInNotifications": true,
+          "StoreInAccountData": false
+        }
+      ]
+    },
+    {
+      "Name": "Initials",
+      "Description": "[Mandatory]",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create",
+            "Update"
+          ],
+          "MappingMode": "Complex",
+          "Value": "\"function getInitials() {\\r\\n    let Initials = Person.Name.Initials\\r\\n    if (Initials == null) {\\r\\n        Initials = Person.Name.NickName.slice(0,1)\\r\\n    }\\r\\n    \\r\\n    return Initials\\r\\n}\\r\\ngetInitials()\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
+        }
+      ]
+    },
+    {
+      "Name": "Gender",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create",
+            "Update"
+          ],
+          "MappingMode": "Complex",
+          "Value": "\"function getValue() {\\r\\n    switch (Person.Details.Gender) {\\r\\n        case \\\"V\\\": return \\\"FEMALE\\\"\\r\\n        case \\\"M\\\": return \\\"MALE\\\"\\r\\n        //default: return\\\"UNKNOWN\\\"\\r\\n        default: return\\\"MALE\\\"\\r\\n    }    \\r\\n}\\r\\ngetValue();\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
+        }
+      ]
+    },
+    {
+      "Name": "MobilePhone",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create",
+            "Update"
+          ],
+          "MappingMode": "None",
+          "Value": "\"\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
+        }
+      ]
+    },
+    {
+      "Name": "WorkPhone",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create",
+            "Update"
+          ],
+          "MappingMode": "None",
+          "Value": "\"\"",
+          "UsedInNotifications": false,
           "StoreInAccountData": false
         }
       ]
@@ -257,7 +257,7 @@
             "Create"
           ],
           "MappingMode": "Complex",
-          "Value": "\"// Please enter the mapping logic to generate the ysisInitials\\r\\n// -- The first option is generated here. Subsequent iterations are produced in the create script\\r\\nfunction generateYsisInitials() {\\r\\n\\tlet firstName = Person.Name.NickName;\\r\\n\\tlet lastName = Person.Name.FamilyName;\\r\\n    let ysisInitials = lastName.trim().padEnd(3,'X').substring(0,2) + firstName.trim().padEnd(2,'X').substring(0,2);\\r\\n    \\r\\n    //Remove diacritical chars\\r\\n\\tysisInitials = deleteDiacriticalMarks(ysisInitials); \\r\\n    return ysisInitials.toUpperCase();\\r\\n}\\r\\n\\r\\ngenerateYsisInitials();\"",
+          "Value": "\"// Please enter the mapping logic to generate the sAMAccountName.\\r\\nfunction getYsisInitials() {\\r\\n\\tlet firstName = Person.Name.NickName;\\r\\n\\tlet lastName = Person.Name.FamilyName;\\r\\n    \\r\\n    // Remove blank chars and \\\"'\\\"\\r\\n    firstName = firstName.replace(/[^0-9a-zA-Z.-_]/g, '');\\r\\n    lastName = lastName.replace(/[^0-9a-zA-Z.-_]/g, '');\\r\\n\\r\\n    // set Ysis initials\\r\\n    let ysisInitials = lastName.trim().padEnd(3,'X').substring(0,2) + firstName.trim().padEnd(2,'X').substring(0,2);\\r\\n    \\r\\n    //Remove diacritical chars\\r\\n\\tysisInitials = deleteDiacriticalMarks(ysisInitials); \\r\\n\\r\\n    // Convert to upper case\\r\\n    ysisInitials = ysisInitials.toUpperCase();\\r\\n    \\r\\n    return ysisInitials\\r\\n}\\r\\ngetYsisInitials();\"",
           "UsedInNotifications": true,
           "StoreInAccountData": true
         },
