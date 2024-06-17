@@ -115,7 +115,6 @@ try {
         if ($config.UpdateUsernameOnDelete -eq $true) {
             # Optional update Username before "archive"
             Write-Verbose "Updating Ysis account with accountReference: [$($actionContext.References.Account)]"
-            # Todo: Add UPN clear logic here
             $responseUser.userName = $responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials
             $splatParams = @{
                 Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
