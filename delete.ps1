@@ -137,7 +137,7 @@ try {
 
         $outputContext.AuditLogs.Add([PSCustomObject]@{
                 Action  = "DeleteAccount"
-                Message = "Delete account [$($person.DisplayName)] with reference [$($actionContext.References.Account)] was successful"
+                Message = "Account with username [$($responseUser.UserName)] and Ysis Initials [$($responseUser.ysisInitials)] archived"
                 IsError = $false
             })
     }

@@ -124,7 +124,7 @@ try {
 
         $outputContext.AuditLogs.Add([PSCustomObject]@{
                 Action  = "EnableAccount"
-                Message = "Account [$($person.DisplayName)] with reference  $($actionContext.References.Account) enabled"
+                Message = "Account with username [$($responseUser.UserName)] and Ysis Initials [$($responseUser.ysisInitials)] enabled"
                 IsError = $false
             })
     }

@@ -353,7 +353,7 @@ try {
 
                 $outputContext.AuditLogs.Add([PSCustomObject]@{
                         Action  = "CreateAccount"
-                        Message = "Created account with username $($account.UserName)"
+                        Message = "Account with username [$($account.UserName)] and Ysis Initials [$($account.ysisInitials)] created"
                         IsError = $false
                     })
 

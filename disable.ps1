@@ -122,7 +122,7 @@ try {
 
         $outputContext.AuditLogs.Add([PSCustomObject]@{
                 Action  = "DisableAccount"
-                Message = "Account [$($person.DisplayName)] with reference  $($actionContext.References.Account) disabled"
+                Message = "Account with username [$($responseUser.UserName)] and Ysis Initials [$($responseUser.ysisInitials)] created"
                 IsError = $false
             })
     }
