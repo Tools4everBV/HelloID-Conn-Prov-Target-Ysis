@@ -124,7 +124,7 @@ try {
 
         $outputContext.AuditLogs.Add([PSCustomObject]@{
                 Action  = "EnableAccount"
-                Message = "Account with username [$($responseUser.UserName)] and Ysis Initials [$($responseUser.ysisInitials)] enabled"
+                Message = "Account with Ysis Initials [$($responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)] and username [$($responseUser.UserName)]"
                 IsError = $false
             })
     }

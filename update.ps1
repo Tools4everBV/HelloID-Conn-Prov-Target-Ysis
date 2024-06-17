@@ -278,7 +278,7 @@ try {
 
         $outputContext.AuditLogs.Add([PSCustomObject]@{
                 Action  = "UpdateAccount"
-                Message = "Account with username [$($account.UserName)] and Ysis Initials [$($account.ysisInitials)] updated"
+                Message = "Account with Ysis Initials [$($account.ysisInitials)] and username [$($account.UserName)] updated"
                 IsError = $false
             })
     }

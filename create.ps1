@@ -276,7 +276,7 @@ try {
 
             $outputContext.AuditLogs.Add([PSCustomObject]@{
                     Action  = "CorrelateAccount"
-                    Message = "Correlated account with username [$($correlatedAccount.UserName)] on field [$($correlationField)] with value [$($correlationValue)]"
+                    Message = "Account with Ysis Initials [$($account.ysisInitials)] and username [$($account.UserName)] correlated on field [$($correlationField)] with value [$($correlationValue)]"
                     IsError = $false
                 })
 
@@ -353,7 +353,7 @@ try {
 
                 $outputContext.AuditLogs.Add([PSCustomObject]@{
                         Action  = "CreateAccount"
-                        Message = "Account with username [$($account.UserName)] and Ysis Initials [$($account.ysisInitials)] created"
+                        Message = "Account with Ysis Initials [$($account.ysisInitials)] and username [$($account.UserName)] created"
                         IsError = $false
                     })
 

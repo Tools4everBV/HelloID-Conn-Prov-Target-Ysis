@@ -124,7 +124,11 @@ try {
                 ContentType = 'application/scim+json'
             }
             $null = Invoke-RestMethod @splatParams -Verbose:$false
-
+            $outputContext.AuditLogs.Add([PSCustomObject]@{
+                Action  = "UpdateAccount"
+                Message = "Username for account with Ysis Initials [$($responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)] updated to [$($responseUser.userName)]"
+                IsError = $false
+            })
             Write-Verbose "Username of account [$($person.DisplayName)] with reference [$($actionContext.References.Account)] updated"
         }
         Write-Verbose "Deleting Ysis account with userName accountReference [$($actionContext.References.Account)]"
@@ -137,7 +141,7 @@ try {
 
         $outputContext.AuditLogs.Add([PSCustomObject]@{
                 Action  = "DeleteAccount"
-                Message = "Account with username [$($responseUser.UserName)] and Ysis Initials [$($responseUser.ysisInitials)] archived"
+                Message = "Account with Ysis Initials [$($responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)] and username [$($responseUser.UserName)] archived"
                 IsError = $false
             })
     }
