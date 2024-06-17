@@ -111,7 +111,6 @@ The following settings are required to connect to the API.
 | ClientSecret            | The ClientSecret to connect to the Ysis API                                   |
 | BaseUrl                 | The URL to the Ysis environment. Example: https://company.acceptatie2.ysis.nl |
 | MappingFile             | The mapping between function and discipline                                   |
-| UpdatePersonOnCorrelate | This will update the account in the target application during correlation     |
 | UpdateUsernameOnDelete  | Update username to the YsisIntials when archiving Ysis account                |
 | IsDebug                 | When toggled, debug logging will be displayed                                 |
 

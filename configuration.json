@@ -42,16 +42,6 @@
     }
   },
   {
-    "key": "UpdatePersonOnCorrelate",
-    "type": "checkbox",
-    "defaultValue": false,
-    "templateOptions": {
-      "label": "Update account during correlating",
-      "required": false,
-      "description": "This will update the account in the target application during correlation"
-    }
-  },
-  {
     "key": "UpdateUsernameOnDelete",
     "type": "checkbox",
     "defaultValue": false,

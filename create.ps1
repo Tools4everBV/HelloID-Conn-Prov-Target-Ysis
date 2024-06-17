@@ -280,17 +280,12 @@ try {
                     IsError = $false
                 })
 
-            if ($actionContext.Configuration.UpdatePersonOnCorrelate -eq 'True') {
+                # Update is handled in the update script
                 $outputContext.AccountCorrelated = $True
-            }
-            else {
-                $account.ysisInitials = $correlatedAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials
-                $account.Discipline = $correlatedAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.Discipline
-            }
         }
     }
 
-    if (!$outputContext.AccountCorrelated -and $null -eq $correlatedAccount) {
+    if (-not $outputContext.AccountCorrelated -and $null -eq $correlatedAccount) {
 
         if ([string]::IsNullOrEmpty($disciplineSearchValue)) {
             Write-Warning "No discipline mapping for found in csv for title [$($account.Position)]"
