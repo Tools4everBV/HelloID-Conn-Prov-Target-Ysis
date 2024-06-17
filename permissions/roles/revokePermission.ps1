@@ -131,7 +131,7 @@ try {
 
     $outputContext.Success = $true
     $outputContext.AuditLogs.Add([PSCustomObject]@{
-            Message = "Revoke permission [$($actionContext.References.Permission.DisplayName)] was successful"
+            Message = "Revoke permission [$($actionContext.References.Permission.DisplayName)] to account with Ysis Initials [$($responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)] was successful"
             IsError = $false
         })
 }
