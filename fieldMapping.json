@@ -176,7 +176,7 @@
             "Update"
           ],
           "MappingMode": "Complex",
-          "Value": "\"function userName() {\\r\\n    let upn = '';\\r\\n    if (typeof Person.Accounts.MicrosoftActiveDir.userPrincipalName !== 'undefined' && Person.Accounts.MicrosoftActiveDirectory.userPrincipalName) {\\r\\n        upn = Person.Accounts.MicrosoftActiveDirectory.userPrincipalName;\\r\\n    }\\r\\n    return upn;\\r\\n}\\r\\nuserName();\"",
+          "Value": "\"function userName() {\\r\\n    let upn = '';\\r\\n    if (typeof Person.Accounts.MicrosoftActiveDirectory.userPrincipalName !== 'undefined' && Person.Accounts.MicrosoftActiveDirectory.userPrincipalName) {\\r\\n        upn = Person.Accounts.MicrosoftActiveDirectory.userPrincipalName;\\r\\n    }\\r\\n    return upn;\\r\\n}\\r\\nuserName();\"",
           "UsedInNotifications": true,
           "StoreInAccountData": false
         }
