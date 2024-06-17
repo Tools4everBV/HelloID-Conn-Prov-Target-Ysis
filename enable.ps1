@@ -109,7 +109,7 @@ try {
             })
     }
 
-    if (-Not($actionContext.DryRun -eq $true)) {
+    if (-not($actionContext.DryRun -eq $true)) {
 
         Write-Verbose "Enabling Ysis account with username [$($responseUser.userName)]"
         $responseUser.active = $true
@@ -131,7 +131,7 @@ try {
 }
 catch {
     $ex = $PSItem
-    if (-Not($ex.Exception.Message -eq 'AccountNotFound')) {
+    if (-not($ex.Exception.Message -eq 'AccountNotFound')) {
         if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
             $errorObj = Resolve-YsisError -ErrorObject $ex
             $auditMessage = "Could not enable Ysis account. Error: $($errorObj.FriendlyMessage)"

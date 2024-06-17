@@ -135,7 +135,7 @@ try {
 }
 catch {
     $ex = $PSItem
-    if (-Not($ex.Exception.Message -eq 'AccountNotFound')) {
+    if (-not($ex.Exception.Message -eq 'AccountNotFound')) {
         if ($($ex.Exception.GetType().FullName -eq 'Microsoft.PowerShell.Commands.HttpResponseException') -or
             $($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
             $errorObj = Resolve-YsisError -ErrorObject $ex

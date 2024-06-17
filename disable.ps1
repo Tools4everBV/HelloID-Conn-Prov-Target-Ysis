@@ -108,7 +108,7 @@ try {
             })
     }
 
-    if (-Not($actionContext.DryRun -eq $true)) {
+    if (-not($actionContext.DryRun -eq $true)) {
         Write-Verbose "Disabling Ysis account with accountReference [$($actionContext.References.Account)]"
         $responseUser.active = $false
         $splatParams = @{
@@ -129,7 +129,7 @@ try {
 }
 catch {
     $ex = $PSItem
-    if (-Not($ex.Exception.Message -eq 'AccountNotFound')) {
+    if (-not($ex.Exception.Message -eq 'AccountNotFound')) {
         if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
             $errorObj = Resolve-YsisError -ErrorObject $ex
             $auditMessage = "Could not disable Ysis account. Error: $($errorObj.FriendlyMessage)"
@@ -148,7 +148,7 @@ catch {
 }
 finally {
     # Check if auditLogs contains errors, if no errors are found, set success to true
-    if (-NOT($outputContext.AuditLogs.IsError -contains $true)) {
+    if (-not($outputContext.AuditLogs.IsError -contains $true)) {
         $outputContext.Success = $true
     }
     # Retrieve account information for notifications

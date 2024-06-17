@@ -94,7 +94,7 @@ try {
         if ($_.Exception.Response.StatusCode -eq 404) {
             $outputContext.AuditLogs.Add([PSCustomObject]@{
                     Action  = "GrantPermission"
-                    Message = "Unable to assign permission [$($actionContext.References.Permission.displayName)]. Ysis account for [$($person.DisplayName)] not found. Account is possibly deleted" # Todo error message
+                    Message = "Unable to assign permission [$($actionContext.References.Permission.displayName)]. Ysis account for [$($person.DisplayName)] not found. Account is possibly deleted"
                     IsError = $true
                 })
             throw "AccountNotFound"

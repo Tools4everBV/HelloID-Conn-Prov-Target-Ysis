@@ -5,6 +5,9 @@
 
 # Initialize default values
 $config = $actionContext.Configuration
+$person = $personContext.Person
+
+$disciplineSearchField = "JobTitleId"
 
 # AccountReference must have a value
 $outputContext.AccountReference = $actionContext.References.Account
@@ -59,7 +62,6 @@ function Resolve-YsisError {
 try {
     # Create account object from mapped data and set the correct account reference
     $account = $actionContext.Data
-    $person = $personContext.Person
 
     # Remove ID field because only used for export data
     if ($account.PSObject.Properties.Name -Contains 'id') {
@@ -130,9 +132,7 @@ try {
             $sixthProperty)
     }
 
-    $contracts = $personContext.Person.Contracts
-
-    [array]$desiredContracts = $contracts | Where-Object { $_.Context.InConditions -eq $true -or $actionContext.DryRun -eq $true }
+    [array]$desiredContracts = $personContext.Person.Contracts | Where-Object { $_.Context.InConditions -eq $true -or $actionContext.DryRun -eq $true }
 
     if ($desiredContracts.length -lt 1) {
         # no contracts in scope found
@@ -144,8 +144,6 @@ try {
         $disciplineSearchValue = $primaryContract.Title.ExternalId
         $account.Position = $primaryContract.Title.Name
     }
-
-    $disciplineSearchField = "JobTitleId" # Move to top?
 
     # set dynamic values
     $mapping = Import-Csv "$($config.MappingFile)" -Delimiter ";" -Encoding Default
@@ -271,7 +269,7 @@ try {
             Body        = $ysisaccount | ConvertTo-Json
             ContentType = 'application/scim+json;charset=UTF-8'
         }
-        if (-Not($actionContext.DryRun -eq $true)) {
+        if (-not($actionContext.DryRun -eq $true)) {
             $null = Invoke-RestMethod @splatUpdateUserParams -Verbose:$false
         }
         else {
@@ -290,7 +288,7 @@ try {
 }
 catch {
     $ex = $PSItem
-    if (-Not($ex.Exception.Message -eq 'AccountNotFound'-or $ex.Exception.Message -eq 'Error(s) occured while looking up required values')) {
+    if (-not($ex.Exception.Message -eq 'AccountNotFound'-or $ex.Exception.Message -eq 'Error(s) occured while looking up required values')) {
         if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
             $errorObj = Resolve-YsisError -ErrorObject $ex
             $auditMessage = "Could not update Ysis account. Error: $($errorObj.FriendlyMessage)"

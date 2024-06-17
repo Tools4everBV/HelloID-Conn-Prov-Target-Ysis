@@ -96,77 +96,75 @@ try {
                     Message = "Ysis account for [$($person.DisplayName)] could not be found by account reference [$($actionContext.References.Account)] and is possibly already deleted. Skipping action"
                     IsError = $false
                 })
-            $responseUser = $null
+            throw "AccountNotFound"
         }
-        else {
-            throw $_
-        }
+        throw $_
     }
 
-    if ($responseUser) {
-        if ($actionContext.DryRun -eq $true) {
-            $outputContext.AuditLogs.Add([PSCustomObject]@{
-                    Action  = "DeleteAccount"
-                    Message = "[DryRun] Delete Ysis account for [$($person.DisplayName)] with reference [$($actionContext.References.Account)] will be executed during enforcement"
-                    IsError = $false
-                })
-        }
+    
+    if ($actionContext.DryRun -eq $true) {
+        # Move dryrun below so we can dump the bodies
+        $outputContext.AuditLogs.Add([PSCustomObject]@{
+                Action  = "DeleteAccount"
+                Message = "[DryRun] Delete Ysis account for [$($person.DisplayName)] with reference [$($actionContext.References.Account)] will be executed during enforcement"
+                IsError = $false
+            })
+    }
 
-        if (-Not($actionContext.DryRun -eq $true)) {
-            if ($config.UpdateUsernameOnDelete -eq $true) {
-                # Optional update Username before "archive"
-                Write-Verbose "Updating Ysis account with accountReference: [$($actionContext.References.Account)]"
-                $responseUser.userName = $responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials
-                $splatParams = @{
-                    Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
-                    Headers     = $headers
-                    Method      = 'PUT'
-                    Body        = $responseUser | ConvertTo-Json
-                    ContentType = 'application/scim+json'
-                }
-                $null = Invoke-RestMethod @splatParams -Verbose:$false
-
-                Write-Verbose "Username of account [$($person.DisplayName)] with reference [$($actionContext.References.Account)] updated"
-            }
-            Write-Verbose "Deleting Ysis account with userName accountReference [$($actionContext.References.Account)]"
+    if (-not($actionContext.DryRun -eq $true)) {
+        if ($config.UpdateUsernameOnDelete -eq $true) {
+            # Optional update Username before "archive"
+            Write-Verbose "Updating Ysis account with accountReference: [$($actionContext.References.Account)]"
+            # Todo: Add UPN clear logic here
+            $responseUser.userName = $responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials
             $splatParams = @{
-                Uri     = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
-                Headers = $headers
-                Method  = 'DELETE'
+                Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
+                Headers     = $headers
+                Method      = 'PUT'
+                Body        = $responseUser | ConvertTo-Json
+                ContentType = 'application/scim+json'
             }
             $null = Invoke-RestMethod @splatParams -Verbose:$false
 
-            $outputContext.AuditLogs.Add([PSCustomObject]@{
-                    Action  = "DeleteAccount"
-                    Message = "Delete account [$($person.DisplayName)] with reference  [$($actionContext.References.Account)] was successful"
-                    IsError = $false
-                })
+            Write-Verbose "Username of account [$($person.DisplayName)] with reference [$($actionContext.References.Account)] updated"
         }
+        Write-Verbose "Deleting Ysis account with userName accountReference [$($actionContext.References.Account)]"
+        $splatParams = @{
+            Uri     = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
+            Headers = $headers
+            Method  = 'DELETE'
+        }
+        $null = Invoke-RestMethod @splatParams -Verbose:$false
+
+        $outputContext.AuditLogs.Add([PSCustomObject]@{
+                Action  = "DeleteAccount"
+                Message = "Delete account [$($person.DisplayName)] with reference [$($actionContext.References.Account)] was successful"
+                IsError = $false
+            })
     }
 }
 catch {
     $ex = $PSItem
-    if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
-        $errorObj = Resolve-YsisError -ErrorObject $ex
+    if (-not($ex.Exception.Message -eq 'AccountNotFound')) {
+        if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
+            $errorObj = Resolve-YsisError -ErrorObject $ex
+            $auditMessage = "Could not delete Ysis account. Error: $($errorObj.FriendlyMessage)"
+            Write-Warning "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
+        }
+        else {
+            $auditMessage = "Could not delete Ysis account. Error: $($ex.Exception.Message)"
+            Write-Warning "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
+        }
         $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "DeleteAccount"
-                Message = "Could not delete Ysis account. Error: $($errorObj.FriendlyMessage)"
-                IsError = $true
-            })
-        Write-Warning "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
-    }
-    else {
-        $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "DeleteAccount"
-                Message = "Could not delete Ysis account. Error: $($ex.Exception.Message)"
-                IsError = $true
-            })
-        Write-Warning "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
+            Action  = "DeleteAccount"
+            Message = $auditMessage
+            IsError = $true
+        })
     }
 }
 finally {
     # Check if auditLogs contains errors, if no errors are found, set success to true
-    if (-NOT($outputContext.AuditLogs.IsError -contains $true)) {
+    if (-not($outputContext.AuditLogs.IsError -contains $true)) {
         $outputContext.Success = $true
     }
 }

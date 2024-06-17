@@ -5,6 +5,9 @@
 
 # Initialize default values
 $config = $actionContext.Configuration
+$person = $personContext.Person
+$disciplineSearchField = "JobTitleId" # fieldname in CSV
+
 $outputContext.AccountReference = 'Currently not available'
 
 # Enable TLS1.2
@@ -103,9 +106,6 @@ function Resolve-YsisError {
 try {
     # Create account object from mapped data and set the correct account reference
     $account = $actionContext.Data
-    $person = $personContext.Person
-
-    $disciplineSearchField = "JobTitleId" # fieldname in CSV
 
     # Remove ID field because only used for export data
     if ($account.PSObject.Properties.Name -Contains 'id') {
@@ -131,9 +131,7 @@ try {
             $sixthProperty)
     }
 
-    $contracts = $personContext.Person.Contracts
-
-    [array]$desiredContracts = $contracts | Where-Object { $_.Context.InConditions -eq $true -or $actionContext.DryRun -eq $true }
+    [array]$desiredContracts = $personContext.Person.Contracts | Where-Object { $_.Context.InConditions -eq $true -or $actionContext.DryRun -eq $true }
 
     if ($desiredContracts.length -lt 1) {
         # no contracts in scope found
@@ -349,7 +347,7 @@ try {
                     ContentType = 'application/scim+json;charset=UTF-8'
                 }
 
-                if (-Not($actionContext.DryRun -eq $true)) {
+                if (-not($actionContext.DryRun -eq $true)) {
                     $responseCreateUser = Invoke-RestMethod @splatCreateUserParams -Verbose:$false
                     $outputContext.AccountReference = $responseCreateUser.id
                 }
@@ -399,7 +397,7 @@ try {
 }
 catch {
     $ex = $PSItem
-    if (-Not($ex.Exception.Message -eq 'Token error' -or $ex.Exception.Message -eq 'Error(s) occured while looking up required values')) {
+    if (-not($ex.Exception.Message -eq 'Token error' -or $ex.Exception.Message -eq 'Error(s) occured while looking up required values')) {
         if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
             $errorObj = Resolve-YsisError -ErrorObject $ex
             $auditMessage = "Could not create Ysis account. Error: $($errorObj.FriendlyMessage)"
@@ -418,7 +416,7 @@ catch {
 }
 finally {
     # Check if auditLogs contains errors, if no errors are found, set success to true
-    if (-NOT($outputContext.AuditLogs.IsError -contains $true)) {
+    if (-not($outputContext.AuditLogs.IsError -contains $true)) {
         $outputContext.Success = $true
     }
 
