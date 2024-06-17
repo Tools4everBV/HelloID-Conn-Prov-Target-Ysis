@@ -1,11 +1,10 @@
-#################################################
-# HelloID-Conn-Prov-Target-Ysis-Enable
+###################################################################
+# HelloID-Conn-Prov-Target-Ysis-Permissions-Roles-GrantPermission
 # PowerShell V2
-#################################################
+###################################################################
 
 # Initialize default values
 $config = $actionContext.Configuration
-$person = $personContext.Person
 
 # Enable TLS1.2
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
@@ -54,13 +53,16 @@ function Resolve-YsisError {
         Write-Output $httpErrorObj
     }
 }
-#endregion functions
+#endregion
 
+# Begin
 try {
+    # Verify if [aRef] has a value
     if ([string]::IsNullOrEmpty($($actionContext.References.Account))) {
-        throw "The account reference could not be found"
+        throw 'The account reference could not be found'
     }
 
+    # Requesting authorization token
     $splatRequestToken = @{
         Uri    = "$($config.BaseUrl)/cas/oauth/token"
         Method = 'POST'
@@ -71,91 +73,84 @@ try {
             grant_type    = 'client_credentials'
         }
     }
-
     $responseAccessToken = Invoke-RestMethod @splatRequestToken -Verbose:$false
-    
+
     $headers = [System.Collections.Generic.Dictionary[string, string]]::new()
     $headers.Add('Authorization', "Bearer $($responseAccessToken.access_token)")
-    $headers.Add('Accept', 'application/json')
+    $headers.Add('Accept', 'application/json; charset=utf-8')
     $headers.Add('Content-Type', 'application/json')
 
-    Write-Verbose "Verifying if Ysis account for [$($person.DisplayName)] exists"
+    Write-Information "Verifying if a Ysis account for [$($personContext.Person.DisplayName)] exists"
     try {
         $splatParams = @{
             Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
             Headers     = $headers
-            ContentType = 'application/json'
+            ContentType = 'application/scim+json;charset=UTF-8'
         }
         $responseUser = Invoke-RestMethod @splatParams -Verbose:$false
     }
     catch {
         if ($_.Exception.Response.StatusCode -eq 404) {
-            Write-Warning "Ysis account for [$($person.DisplayName)] could not be found by accountreference [$($actionContext.References.Account)] and is possibly deleted. To create or correlate a new account, unmanage the account entitlement and rerun an enforcement"
             $outputContext.AuditLogs.Add([PSCustomObject]@{
-                    Action  = "EnableAccount"
-                    Message = "Ysis account for [$($person.DisplayName)] could not be found by accountreference [$($actionContext.References.Account)] and is possibly deleted"
+                    Action  = "GrantPermission"
+                    Message = "Unable to assign permission [$($actionContext.References.Permission.DisplayName)]. Ysis account for [$($person.DisplayName)] not found. Account is possibly deleted"
                     IsError = $true
                 })
             throw "AccountNotFound"
         }
         throw $_
     }
-
-    if ($actionContext.DryRun -eq $true) {
-        $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "EnableAccount"
-                Message = "[DryRun] Account [$($person.DisplayName)] with username [$($responseUser.userName)] will be enabled"
-                IsError = $false
+    
+    # Process
+    Write-Verbose "Pre: all assigned roles ($($responseUser.roles.count)): $($responseUser.roles.displayName -join ", ")"
+    Write-Information "Granting Ysis entitlement: [$($actionContext.References.Permission.DisplayName)]"
+    if ($responseUser.roles.count -eq 0 -or $actionContext.References.Permission.Reference -notin $responseUser.roles.value) {
+        $responseUser.roles += ([PSCustomObject]@{
+                value       = $actionContext.References.Permission.Reference
+                displayName = $actionContext.References.Permission.DisplayName
             })
-    }
 
-    if (-not($actionContext.DryRun -eq $true)) {
-
-        Write-Verbose "Enabling Ysis account with username [$($responseUser.userName)]"
-        $responseUser.active = $true
         $splatParams = @{
             Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
             Headers     = $headers
             Method      = 'PUT'
-            Body        = $responseUser | ConvertTo-Json
-            ContentType = 'application/scim+json'
+            Body        = ($responseUser | ConvertTo-Json -Depth 10)
+            ContentType = 'application/scim+json;charset=UTF-8'
         }
-        $null = Invoke-RestMethod @splatParams -Verbose:$false
 
-        $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "EnableAccount"
-                Message = "Account with Ysis Initials [$($responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)] and username [$($responseUser.UserName)] enabled"
-                IsError = $false
-            })
+        if ($actionContext.DryRun -eq $true) {
+            Write-Warning "[DryRun] Will send: $($splatParams.Body)"
+        }
+        else {
+            $null = Invoke-RestMethod @splatParams -Verbose:$false
+        }
+
+        Write-Verbose "Post: all assigned roles ($($responseUser.roles.count)): $($responseUser.roles.displayName -join ", ")"
     }
+    else {
+        Write-Warning "Permission [($($actionContext.References.Permission.DisplayName))] was already assigned in Ysis"
+    }
+
+    $outputContext.Success = $true
+    $outputContext.AuditLogs.Add([PSCustomObject]@{
+            Message = "Grant permission [$($actionContext.References.Permission.DisplayName)] to account with Ysis Initials [$($responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)] was successful"
+            IsError = $false
+        })
 }
 catch {
     $ex = $PSItem
-    if (-not($ex.Exception.Message -eq 'AccountNotFound')) {
-        if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
-            $errorObj = Resolve-YsisError -ErrorObject $ex
-            $auditMessage = "Could not enable Ysis account. Error: $($errorObj.FriendlyMessage)"
-            Write-Warning "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
-        }
-        else {
-            $auditMessage = "Could not enable Ysis account. Error: $($ex.Exception.Message)"
-            Write-Warning "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
-        }
-        $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "EnableAccount"
-                Message = $auditMessage
-                IsError = $true
-            })
+    if ($($ex.Exception.GetType().FullName -eq 'Microsoft.PowerShell.Commands.HttpResponseException') -or
+        $($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
+        $errorObj = Resolve-YsisError -ErrorObject $ex
+        $auditMessage = "Could not grant Ysis permission [$($actionContext.References.Permission.DisplayName)]. Error: $($errorObj.FriendlyMessage)"
+        Write-Warning "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
     }
-}
-finally {
-    # Check if auditLogs contains errors, if no errors are found, set success to true
-    if (-not($outputContext.AuditLogs.IsError -contains $true)) {
-        $outputContext.Success = $true
+    else {
+        $auditMessage = "Could not grant Ysis permission [$($actionContext.References.Permission.DisplayName)]. Error: $($_.Exception.Message)"
+        Write-Warning "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
     }
-
-    # Retrieve account information for notifications
-    # $outputContext.PreviousData.ExternalId = $personContext.References.Account
-    # $outputContext.Data.UserName    = $actionContext.Data.UserName
-    # $outputContext.Data.ExternalId  = $personContext.References.Account
+    $outputContext.AuditLogs.Add([PSCustomObject]@{
+            Message = $auditMessage
+            IsError = $true
+        })
 }
