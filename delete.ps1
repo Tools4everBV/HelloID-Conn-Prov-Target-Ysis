@@ -115,6 +115,7 @@ try {
         if ($config.UpdateUsernameOnDelete -eq $true) {
             # Optional update Username before "archive"
             Write-Verbose "Updating Ysis account with accountReference: [$($actionContext.References.Account)]"
+            $currentUserName = $responseUser.userName
             $responseUser.userName = $responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials
             $splatParams = @{
                 Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
@@ -126,7 +127,7 @@ try {
             $null = Invoke-RestMethod @splatParams -Verbose:$false
             $outputContext.AuditLogs.Add([PSCustomObject]@{
                 Action  = "UpdateAccount"
-                Message = "Username for account with Ysis Initials [$($responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)] updated to [$($responseUser.userName)]"
+                Message = "Username for account with Ysis Initials [$($responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)] updated from [$currentUserName] to [$($responseUser.userName)]"
                 IsError = $false
             })
             Write-Verbose "Username of account [$($person.DisplayName)] with reference [$($actionContext.References.Account)] updated"
