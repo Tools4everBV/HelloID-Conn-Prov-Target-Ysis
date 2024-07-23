@@ -276,7 +276,7 @@ try {
 
             $outputContext.AuditLogs.Add([PSCustomObject]@{
                     Action  = "CorrelateAccount"
-                    Message = "Account with Ysis Initials [$($account.ysisInitials)] and username [$($account.UserName)] correlated on field [$($correlationField)] with value [$($correlationValue)]"
+                    Message = "Account with Ysis Initials [$($ysisAccount.ysisInitials)] and username [$($ysisAccount.UserName)] correlated on field [$($correlationField)] with value [$($correlationValue)]"
                     IsError = $false
                 })
 
