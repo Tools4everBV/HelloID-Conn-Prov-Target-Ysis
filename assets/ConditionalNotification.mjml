@@ -11,24 +11,36 @@
       </mj-column>
       <mj-column width="75%">
         <mj-text font-family="Arial, Helvetica, sans-serif" font-size="14px" color="#FFFFFF" padding-top="25px" padding-bottom="25px">
-          <b>Ysis Account updated 
-            <br/> 
-          </b> 
+          <b>Ysis account - Discipline change
+            <br/>
+          </b>
         </mj-text>
       </mj-column>
     </mj-section>
     <mj-section background-color="#FFFFFF">
       <mj-column>
-        <mj-text>Hello {{person.primaryManager.displayName||"manager"}}, 
-          <br/> 
-          <br/> An account has been updated for your employee {{person.name.nickName}}. The following changes were noticed:
+        <mj-text>Hello HelloID administrator, 
+          <br/>
+          <br/> An account has been updated for employee {{person.name.nickName}}. The following changes were noticed:
           <br/>
           <br/>New discipline: {{ Data.Discipline || "" }}
           <br/>Old discipline: {{ PreviousData.Discipline || "" }}
           <br/>
-          <br/>Although most changes were updated in Ysis, a discipline change isn't possible. Therefore you should archive the current Ysis user and clear or replace the employeenumber and username from the Ysis person. When archived and cleared, you can perform a retry grant on the Ysis-account entitlement in HelloID. A new Ysis account will be created with the new discipline.
           <br/>
-          <br/>
+          <p>Although most updates were made in Ysis, discipline changes aren't possible. Therefore, take the following actions to make sure a new account is created:
+          </p>
+          <ul>
+            <li>Archive the current user in Ysis and clear or replace the employee number and username from the Ysis person.
+            </li>
+            <li>Perform an unmanage operation on the Ysis account entitlement in HelloID.
+            </li>
+            <li>Run an evaluation and enforcement.
+            </li>
+            <li>A new Ysis account with the new discipline will be created automatically.
+            </li>
+            <li>The appropriate modules and roles will be assigned to the new account.
+            </li>
+          </ul>
         </mj-text>
       </mj-column>
     </mj-section>
