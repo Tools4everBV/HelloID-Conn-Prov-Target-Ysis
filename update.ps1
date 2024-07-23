@@ -171,7 +171,6 @@ try {
         MobilePhone         = ($($currentAccount.phoneNumbers) | Where-Object Type -eq 'mobile').value
         WorkPhone           = ($($currentAccount.phoneNumbers) | Where-Object Type -eq 'work').value
         UserName            = $currentAccount.userName
-        roles               = ($currentAccount.roles).displayname
         exportTimelineEvents = $currentAccount.exportTimelineEvents
     }
 
