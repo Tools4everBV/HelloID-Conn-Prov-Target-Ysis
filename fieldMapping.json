@@ -2,18 +2,65 @@
   "Version": "v1",
   "MappingFields": [
     {
-      "Name": "BigNumber",
+      "Name": "GivenName",
       "Type": "Text",
       "MappingActions": [
         {
           "MapForActions": [
-            "Update",
+            "Create",
+            "Update"
+          ],
+          "MappingMode": "Field",
+          "Value": "\"Person.Name.NickName\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
+        }
+      ]
+    },
+    {
+      "Name": "Password",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
             "Create"
+          ],
+          "MappingMode": "Complex",
+          "Value": "\"function generatePassword(){\\r\\n     \\r\\n    // Initialize these variables for the algorithm to meet your password complexity rules\\r\\n    const passwordLength = 12;\\r\\n    const minUpper = 1;\\r\\n    const maxUpper = 3;\\r\\n    const minNumeric = 0;\\r\\n    const maxNumeric = 2;\\r\\n    const minSpecial = 1;\\r\\n    const maxSpecial = 1;\\r\\n     \\r\\n     \\r\\n    // Do not change any code below this line !!!\\r\\n     \\r\\n    const numberUpper = Math.floor((Math.random() * maxUpper) + minUpper);\\r\\n    const numberNumeric = Math.floor((Math.random() * maxNumeric) + minNumeric);\\r\\n    const numberSpecial = Math.floor((Math.random() * maxSpecial) + minSpecial);\\r\\n    const numberLower = passwordLength - (numberUpper + numberNumeric + numberSpecial);\\r\\n                 \\r\\n    let upperChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';\\r\\n    let lowerChars = 'abcdefghijklmnopqrstuvwxyz';\\r\\n    let numberChars = '0123456789';\\r\\n    let specialChars = '!#$@*?';\\r\\n     \\r\\n    let getRandomValue = function(values) {\\r\\n        return values.charAt(Math.floor(Math.random() * values.length));\\r\\n    };\\r\\n     \\r\\n    let password = [];\\r\\n    for(let i = 0; i < numberNumeric; ++i) { password.push(getRandomValue(numberChars)) }\\r\\n    for(let i = 0; i < numberUpper; ++i) { password.push(getRandomValue(upperChars)) }\\r\\n    for(let i = 0; i < numberSpecial; ++i) { password.push(getRandomValue(specialChars)) }   \\r\\n    for(let i = 0; i < numberLower; ++i) { password.push(getRandomValue(lowerChars)) }\\r\\n         \\r\\n    function randomizeCharSequence(passwordObject){\\r\\n        for(let j, x, i = passwordObject.length; i; j = Math.floor(Math.random() * i), x = passwordObject[--i], passwordObject[i] = passwordObject[j], passwordObject[j] = x);\\r\\n        return passwordObject;\\r\\n    }\\r\\n     \\r\\n    return randomizeCharSequence(password).join('');\\r\\n}\\r\\ngeneratePassword();\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
+        }
+      ]
+    },
+    {
+      "Name": "EmployeeNumber",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create",
+            "Update"
+          ],
+          "MappingMode": "Field",
+          "Value": "\"Person.ExternalId\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
+        }
+      ]
+    },
+    {
+      "Name": "Discipline",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create",
+            "Update"
           ],
           "MappingMode": "None",
           "Value": "null",
-          "UsedInNotifications": false,
-          "StoreInAccountData": false
+          "UsedInNotifications": true,
+          "StoreInAccountData": true
         }
       ]
     },
@@ -28,22 +75,6 @@
           ],
           "MappingMode": "Field",
           "Value": "\"Person.PrimaryContract.Title.Name\"",
-          "UsedInNotifications": false,
-          "StoreInAccountData": false
-        }
-      ]
-    },
-    {
-      "Name": "AgbCode",
-      "Type": "Text",
-      "MappingActions": [
-        {
-          "MapForActions": [
-            "Create",
-            "Update"
-          ],
-          "MappingMode": "None",
-          "Value": "null",
           "UsedInNotifications": false,
           "StoreInAccountData": false
         }
@@ -66,42 +97,7 @@
       ]
     },
     {
-      "Name": "Discipline",
-      "Description": "[Mandatory]",
-      "Type": "Text",
-      "MappingActions": [
-        {
-          "MapForActions": [
-            "Create",
-            "Update"
-          ],
-          "MappingMode": "None",
-          "Value": "null",
-          "UsedInNotifications": true,
-          "StoreInAccountData": true
-        }
-      ]
-    },
-    {
-      "Name": "EmployeeNumber",
-      "Description": "[Mandatory]",
-      "Type": "Text",
-      "MappingActions": [
-        {
-          "MapForActions": [
-            "Create",
-            "Update"
-          ],
-          "MappingMode": "Field",
-          "Value": "\"Person.ExternalId\"",
-          "UsedInNotifications": false,
-          "StoreInAccountData": false
-        }
-      ]
-    },
-    {
       "Name": "FamilyName",
-      "Description": "[Mandatory]",
       "Type": "Text",
       "MappingActions": [
         {
@@ -117,74 +113,7 @@
       ]
     },
     {
-      "Name": "GivenName",
-      "Description": "[Mandatory]",
-      "Type": "Text",
-      "MappingActions": [
-        {
-          "MapForActions": [
-            "Create",
-            "Update"
-          ],
-          "MappingMode": "Field",
-          "Value": "\"Person.Name.NickName\"",
-          "UsedInNotifications": false,
-          "StoreInAccountData": false
-        }
-      ]
-    },
-    {
-      "Name": "Password",
-      "Description": "[Mandatory]",
-      "Type": "Text",
-      "MappingActions": [
-        {
-          "MapForActions": [
-            "Create"
-          ],
-          "MappingMode": "Complex",
-          "Value": "\"function generatePassword(){\\r\\n     \\r\\n    // Initialize these variables for the algorithm to meet your password complexity rules\\r\\n    const passwordLength = 12;\\r\\n    const minUpper = 1;\\r\\n    const maxUpper = 3;\\r\\n    const minNumeric = 0;\\r\\n    const maxNumeric = 2;\\r\\n    const minSpecial = 1;\\r\\n    const maxSpecial = 1;\\r\\n     \\r\\n     \\r\\n    // Do not change any code below this line !!!\\r\\n     \\r\\n    const numberUpper = Math.floor((Math.random() * maxUpper) + minUpper);\\r\\n    const numberNumeric = Math.floor((Math.random() * maxNumeric) + minNumeric);\\r\\n    const numberSpecial = Math.floor((Math.random() * maxSpecial) + minSpecial);\\r\\n    const numberLower = passwordLength - (numberUpper + numberNumeric + numberSpecial);\\r\\n                 \\r\\n    let upperChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';\\r\\n    let lowerChars = 'abcdefghijklmnopqrstuvwxyz';\\r\\n    let numberChars = '0123456789';\\r\\n    let specialChars = '!#$@*?';\\r\\n     \\r\\n    let getRandomValue = function(values) {\\r\\n        return values.charAt(Math.floor(Math.random() * values.length));\\r\\n    };\\r\\n     \\r\\n    let password = [];\\r\\n    for(let i = 0; i < numberNumeric; ++i) { password.push(getRandomValue(numberChars)) }\\r\\n    for(let i = 0; i < numberUpper; ++i) { password.push(getRandomValue(upperChars)) }\\r\\n    for(let i = 0; i < numberSpecial; ++i) { password.push(getRandomValue(specialChars)) }   \\r\\n    for(let i = 0; i < numberLower; ++i) { password.push(getRandomValue(lowerChars)) }\\r\\n         \\r\\n    function randomizeCharSequence(passwordObject){\\r\\n        for(let j, x, i = passwordObject.length; i; j = Math.floor(Math.random() * i), x = passwordObject[--i], passwordObject[i] = passwordObject[j], passwordObject[j] = x);\\r\\n        return passwordObject;\\r\\n    }\\r\\n     \\r\\n    return randomizeCharSequence(password).join('');\\r\\n}\\r\\ngeneratePassword();\"",
-          "UsedInNotifications": false,
-          "StoreInAccountData": false
-        }
-      ]
-    },
-    {
-      "Name": "Email",
-      "Type": "Text",
-      "MappingActions": [
-        {
-          "MapForActions": [
-            "Create",
-            "Update"
-          ],
-          "MappingMode": "Complex",
-          "Value": "\"//YSIS only accepts one e-mailadress\\r\\nfunction GetEmail(){   \\r\\n    let mail = \\\"\\\" \\r\\n    if(typeof Person.Accounts.MicrosoftActiveDirectory.mail !== 'undefined' && Person.Accounts.MicrosoftActiveDirectory.mail) {        \\r\\n        mail = Person.Accounts.MicrosoftActiveDirectory.mail\\r\\n    }   \\r\\n    return mail\\r\\n}\\r\\nGetEmail()\"",
-          "UsedInNotifications": false,
-          "StoreInAccountData": false
-        }
-      ]
-    },
-    {
-      "Name": "UserName",
-      "Description": "[Mandatory]",
-      "Type": "Text",
-      "MappingActions": [
-        {
-          "MapForActions": [
-            "Create",
-            "Update"
-          ],
-          "MappingMode": "Complex",
-          "Value": "\"function userName() {\\r\\n    let upn = '';\\r\\n    if (typeof Person.Accounts.MicrosoftActiveDirectory.userPrincipalName !== 'undefined' && Person.Accounts.MicrosoftActiveDirectory.userPrincipalName) {\\r\\n        upn = Person.Accounts.MicrosoftActiveDirectory.userPrincipalName;\\r\\n    }\\r\\n    return upn;\\r\\n}\\r\\nuserName();\"",
-          "UsedInNotifications": true,
-          "StoreInAccountData": false
-        }
-      ]
-    },
-    {
       "Name": "Initials",
-      "Description": "[Mandatory]",
       "Type": "Text",
       "MappingActions": [
         {
@@ -193,7 +122,7 @@
             "Update"
           ],
           "MappingMode": "Complex",
-          "Value": "\"function getInitials() {\\r\\n    let Initials = Person.Name.Initials\\r\\n    if (Initials == null) {\\r\\n        Initials = Person.Name.NickName.slice(0,1)\\r\\n    }\\r\\n    \\r\\n    return Initials\\r\\n}\\r\\ngetInitials()\"",
+          "Value": "\"function getInitials() {\\n    let initials = Person.Name.NickName.slice(0,1)\\n    return initials\\n}\\n\\ngetInitials();\"",
           "UsedInNotifications": false,
           "StoreInAccountData": false
         }
@@ -209,55 +138,40 @@
             "Update"
           ],
           "MappingMode": "Complex",
-          "Value": "\"function getValue() {\\r\\n    switch (Person.Details.Gender) {\\r\\n        case \\\"V\\\": return \\\"FEMALE\\\"\\r\\n        case \\\"M\\\": return \\\"MALE\\\"\\r\\n        //default: return\\\"UNKNOWN\\\"\\r\\n        default: return\\\"MALE\\\"\\r\\n    }    \\r\\n}\\r\\ngetValue();\"",
+          "Value": "\"function getGender() {\\r\\n    switch (Person.Details.Gender) {\\r\\n        case \\\"Female\\\": return \\\"FEMALE\\\"\\r\\n        case \\\"Male\\\": return \\\"MALE\\\"\\r\\n        default: return\\\"UNKNOWN\\\"\\r\\n    }    \\r\\n}\\r\\ngetGender();\"",
           "UsedInNotifications": false,
           "StoreInAccountData": false
         }
       ]
     },
     {
-      "Name": "MobilePhone",
+      "Name": "UserName",
       "Type": "Text",
       "MappingActions": [
         {
           "MapForActions": [
             "Create",
+            "Delete",
             "Update"
           ],
-          "MappingMode": "None",
-          "Value": "\"\"",
-          "UsedInNotifications": false,
-          "StoreInAccountData": false
-        }
-      ]
-    },
-    {
-      "Name": "WorkPhone",
-      "Type": "Text",
-      "MappingActions": [
-        {
-          "MapForActions": [
-            "Create",
-            "Update"
-          ],
-          "MappingMode": "None",
-          "Value": "\"\"",
-          "UsedInNotifications": false,
+          "MappingMode": "Complex",
+          "Value": "\"//YSIS only accepts one e-mailadress\\r\\nfunction GetMailAddress(){   \\r\\n\\r\\n    let mail = \\\"\\\"    \\r\\n    \\r\\n    if(typeof Person.Accounts.MicrosoftActiveDirectory.mail !== 'undefined' && Person.Accounts.MicrosoftActiveDirectory.mail) {        \\r\\n        mail = Person.Accounts.MicrosoftActiveDirectory.mail\\r\\n    }   \\r\\n    \\r\\n    return mail\\r\\n}\\r\\nGetMailAddress()\"",
+          "UsedInNotifications": true,
           "StoreInAccountData": false
         }
       ]
     },
     {
       "Name": "YsisInitials",
-      "Description": "[Mandatory]",
       "Type": "Text",
       "MappingActions": [
         {
           "MapForActions": [
-            "Create"
+            "Create",
+            "Delete"
           ],
           "MappingMode": "Complex",
-          "Value": "\"// Please enter the mapping logic to generate the sAMAccountName.\\r\\nfunction getYsisInitials() {\\r\\n\\tlet firstName = Person.Name.NickName;\\r\\n\\tlet lastName = Person.Name.FamilyName;\\r\\n    \\r\\n    // Remove blank chars and \\\"'\\\"\\r\\n    firstName = firstName.replace(/[^0-9a-zA-Z.-_]/g, '');\\r\\n    lastName = lastName.replace(/[^0-9a-zA-Z.-_]/g, '');\\r\\n\\r\\n    // set Ysis initials\\r\\n    let ysisInitials = lastName.trim().padEnd(3,'X').substring(0,2) + firstName.trim().padEnd(2,'X').substring(0,2);\\r\\n    \\r\\n    //Remove diacritical chars\\r\\n\\tysisInitials = deleteDiacriticalMarks(ysisInitials); \\r\\n\\r\\n    // Convert to upper case\\r\\n    ysisInitials = ysisInitials.toUpperCase();\\r\\n    \\r\\n    return ysisInitials\\r\\n}\\r\\ngetYsisInitials();\"",
+          "Value": "\"// Please enter the mapping logic to generate the Ysis initials.\\r\\nfunction capitalizeFirstLetter(string) {\\r\\n    return string.charAt(0).toUpperCase() + string.slice(1);\\r\\n}\\r\\n\\r\\nfunction ysisInitials() {\\r\\n\\tlet firstName = Person.Name.NickName;\\r\\n\\tlet lastName = Person.Name.FamilyName;\\r\\n    firstName = capitalizeFirstLetter(firstName)\\r\\n    lastName = capitalizeFirstLetter(lastName)\\r\\n    //let ysisInitials = firstName.trim().padEnd(2,'X').substring(0,2) + lastName.trim().padEnd(3,'X').substring(0,3);\\r\\n    let ysisInitials = lastName.trim().padEnd(2,'x').substring(0,2) + firstName.trim().padEnd(2,'x').substring(0,2)\\r\\n    \\r\\n    //Remove diacritical chars\\r\\n\\tysisInitials = deleteDiacriticalMarks(ysisInitials); \\r\\n    //return ysisInitials.toUpperCase();\\r\\n    return ysisInitials\\r\\n}\\r\\nysisInitials();\"",
           "UsedInNotifications": true,
           "StoreInAccountData": true
         },
@@ -269,6 +183,132 @@
           "Value": "null",
           "UsedInNotifications": false,
           "StoreInAccountData": true
+        }
+      ]
+    },
+    {
+      "Name": "AgbCode",
+      "Description": "",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create",
+            "Update"
+          ],
+          "MappingMode": "None",
+          "Value": "\"\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
+        }
+      ]
+    },
+    {
+      "Name": "BigNumber",
+      "Description": "",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create",
+            "Update"
+          ],
+          "MappingMode": "None",
+          "Value": "\"\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
+        }
+      ]
+    },
+    {
+      "Name": "Email",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create"
+          ],
+          "MappingMode": "Complex",
+          "Value": "\"//YSIS only accepts one e-mailadress\\r\\nfunction GetMailAddresses(){   \\r\\n\\r\\n    let mail = \\\"\\\"    \\r\\n    \\r\\n    if(typeof Person.Accounts.MicrosoftActiveDirectory.mail !== 'undefined' && Person.Accounts.MicrosoftActiveDirectory.mail) {        \\r\\n        mail = Person.Accounts.MicrosoftActiveDirectory.mail\\r\\n    }   \\r\\n    \\r\\n    return mail\\r\\n}\\r\\nGetMailAddresses()\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
+        },
+        {
+          "MapForActions": [
+            "Update"
+          ],
+          "MappingMode": "None",
+          "Value": "\"\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
+        }
+      ]
+    },
+    {
+      "Name": "WorkPhone",
+      "Description": "",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create",
+            "Update"
+          ],
+          "MappingMode": "None",
+          "Value": "\"\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
+        }
+      ]
+    },
+    {
+      "Name": "MobilePhone",
+      "Description": "",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create",
+            "Update"
+          ],
+          "MappingMode": "None",
+          "Value": "\"\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
+        }
+      ]
+    },
+    {
+      "Name": "exportTimelineEvents",
+      "Description": "",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create",
+            "Update"
+          ],
+          "MappingMode": "None",
+          "Value": "\"\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
+        }
+      ]
+    },
+    {
+      "Name": "id",
+      "Description": "",
+      "Type": "Text",
+      "MappingActions": [
+        {
+          "MapForActions": [
+            "Create",
+            "Update"
+          ],
+          "MappingMode": "None",
+          "Value": "\"\"",
+          "UsedInNotifications": false,
+          "StoreInAccountData": false
         }
       ]
     }
