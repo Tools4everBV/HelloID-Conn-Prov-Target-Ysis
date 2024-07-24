@@ -166,6 +166,9 @@ Existing end dates must be cleared for [active] accounts. When HelloID manages t
 ### Username must be unique in Ysis
 The attribute Username must also be unique in Ysis (active, inactive, and archived)
 
+### If the emailaddress is changed, a notification is send to the end user
+If the value in the attribute Email is changed, a notification is send to the end user. This also happens when changing the emailaddress in the test environment.
+
 ## Getting help
 
 > _For more information on how to configure a HelloID PowerShell connector, please refer to our [documentation](https://docs.helloid.com/en/provisioning/target-systems/powershell-v2-target-systems.html) pages_
