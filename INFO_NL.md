@@ -10,7 +10,7 @@ Ysis speelt dus een belangrijke rol in het leveren van de juiste zorg aan kwetsb
 
 De koppeling bespaart je veel tijd en zorgt voor een uniforme werkwijze. Tijmen Lodders, ICT-medewerker bij Stichting TanteLouise, licht toe: 
 
-**_“Per account waren we voorheen wel vijftien minuten bezig. Je moet iedere waarde koppelen, zoeken wat voor functie iemand heeft en bij collega’s nagaan welke rollen iemand uitvoert. Het is daardoor elke keer weer een puzzel om tot een goede oplossing te komen.”_**
+**_“In het verleden maakten we met de hand accounts aan en koppelden we rechten. Nu hebben we dat aan rollen gehangen en wordt alles geautomatiseerd door HelloID. Voor de rest hoeven wij er niks meer mee. Ik check alleen nog twee keer per week of het nog goed werkt, maar dat is het enige. Hiervoor waren we hier per account een minuut of 20 mee bezig. Dat is nu gewoon niet meer nodig.“_**
 
 De Ysis connector maakt integraties met veelvoorkomende systemen mogelijk. Denk daarbij aan: 
 
