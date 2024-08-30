@@ -39,8 +39,6 @@ Let op: HelloID kan initieel vastleggen bij welke discipline een Ysis-account ho
 | **Gegevens werknemer** |  wijzigen	HelloID merkt wijzigingen van gegevens in je bronsysteem automatisch op, en kan deze verwerken in Ysis. Denk daarbij aan de naam van werknemer, bijvoorbeeld indien hij of zij is getrouwd. Let op: HelloID kan niet geautomatiseerd een discipline bijwerken in Ysis. | 
 | **Functie van medewerker verandert** |	Op basis van de informatie uit je bronsystemen kan HelloID een Ysis-account onder meer lid maken van een specifieke module en/of rol in Ysis. Bijvoorbeeld om declaraties te kunnen maken voor onder meer eerstelijns paramedische zorg, de DBC-GRZ en de DBC-GGZ. HelloID kan dit lidmaatschap indien nodig ook weer intrekken.|
 
-
-
 ## Ysis via HelloID koppelen met systemen
 
 HelloID maakt het mogelijk diverse andere systemen met Ysis te integreren, waaronder diverse bronsystemen. Met behulp van de integraties verbeter je het beheer van gebruikersaccounts en autorisaties. Voorbeelden van veelvoorkomende integraties zijn: 
