@@ -234,19 +234,11 @@
       "MappingActions": [
         {
           "MapForActions": [
-            "Create"
+            "Create",
+            "Update"
           ],
           "MappingMode": "Complex",
           "Value": "\"//YSIS only accepts one e-mailadress\\r\\nfunction GetMailAddresses(){   \\r\\n\\r\\n    let mail = \\\"\\\"    \\r\\n    \\r\\n    if(typeof Person.Accounts.MicrosoftActiveDirectory.mail !== 'undefined' && Person.Accounts.MicrosoftActiveDirectory.mail) {        \\r\\n        mail = Person.Accounts.MicrosoftActiveDirectory.mail\\r\\n    }   \\r\\n    \\r\\n    return mail\\r\\n}\\r\\nGetMailAddresses()\"",
-          "UsedInNotifications": false,
-          "StoreInAccountData": false
-        },
-        {
-          "MapForActions": [
-            "Update"
-          ],
-          "MappingMode": "None",
-          "Value": "\"\"",
           "UsedInNotifications": false,
           "StoreInAccountData": false
         }

@@ -199,8 +199,8 @@ try {
         exportTimelineEvents                                         = $currentAccount.exportTimelineEvents
         emails                                                       = @(
             [PSCustomObject]@{
-                # value = $account.Email # Use value from mapping
-                value = $currentAccount.Emails.Value
+                value = $account.Email # Use value from mapping
+                #value = $currentAccount.Emails.Value # Use current value in Ysis
             }
         )
         phoneNumbers                                                 = @(
