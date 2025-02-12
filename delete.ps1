@@ -33,7 +33,8 @@ function Resolve-YsisError {
         }
         if (-not [string]::IsNullOrEmpty($ErrorObject.ErrorDetails.Message)) {
             $httpErrorObj.ErrorDetails = $ErrorObject.ErrorDetails.Message
-        } elseif ($ErrorObject.Exception.GetType().FullName -eq 'System.Net.WebException') {
+        }
+        elseif ($ErrorObject.Exception.GetType().FullName -eq 'System.Net.WebException') {
             if ($null -ne $ErrorObject.Exception.Response) {
                 $streamReaderResponse = [System.IO.StreamReader]::new($ErrorObject.Exception.Response.GetResponseStream()).ReadToEnd()
                 if (-not [string]::IsNullOrEmpty($streamReaderResponse)) {
@@ -46,9 +47,12 @@ function Resolve-YsisError {
         }
         try {
             $errorDetailsObject = ($httpErrorObj.ErrorDetails | ConvertFrom-Json)
-            $httpErrorObj.ErrorDetails = "Message: $($errorDetailsObject.detail), type: $($errorDetailsObject.scimType)"
-            $httpErrorObj.FriendlyMessage = "$($errorDetailsObject.detail), type: $($errorDetailsObject.scimType)"
-        } catch {
+            if ($errorDetailsObject.PSObject.Properties.Name -contains 'scimType') {
+                $httpErrorObj.ErrorDetails = "Message: $($errorDetailsObject.detail), type: $($errorDetailsObject.scimType)"
+                $httpErrorObj.FriendlyMessage = "$($errorDetailsObject.detail), type: $($errorDetailsObject.scimType)"
+            }
+        }
+        catch {
             $httpErrorObj.FriendlyMessage = $httpErrorObj.ErrorDetails
         }
         Write-Output $httpErrorObj
@@ -126,10 +130,10 @@ try {
             }
             $null = Invoke-RestMethod @splatParams -Verbose:$false
             $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "UpdateAccount"
-                Message = "Username for account with Ysis Initials [$($responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)] updated from [$currentUserName] to [$($responseUser.userName)]"
-                IsError = $false
-            })
+                    Action  = "UpdateAccount"
+                    Message = "Username for account with Ysis Initials [$($responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)] updated from [$currentUserName] to [$($responseUser.userName)]"
+                    IsError = $false
+                })
             Write-Verbose "Username of account [$($person.DisplayName)] with reference [$($actionContext.References.Account)] updated"
         }
         Write-Verbose "Deleting Ysis account with userName accountReference [$($actionContext.References.Account)]"
@@ -149,6 +153,9 @@ try {
 }
 catch {
     $ex = $PSItem
+    if ($_.Exception.Response.StatusCode -eq 401) {
+        Write-Warning $_
+    }
     if (-not($ex.Exception.Message -eq 'AccountNotFound')) {
         if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
             $errorObj = Resolve-YsisError -ErrorObject $ex
@@ -160,10 +167,10 @@ catch {
             Write-Warning "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
         }
         $outputContext.AuditLogs.Add([PSCustomObject]@{
-            Action  = "DeleteAccount"
-            Message = $auditMessage
-            IsError = $true
-        })
+                Action  = "DeleteAccount"
+                Message = $auditMessage
+                IsError = $true
+            })
     }
 }
 finally {

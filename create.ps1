@@ -39,8 +39,9 @@ function Set-YsisInitials-Iteration {
                 }
                 default {
                     if ($Person.Name.NickName.Length -ge ($iteration + 2)) {
-                        $nickNameExtraChars = $Person.Name.NickName.substring(2, $iteration)
-                        $tempInitials = ("{0}{1}" -f $ysisInitials, $nickNameExtraChars)
+                        $extraChars = $Person.Name.NickName.substring(2, $iteration)
+                        # $extraChars = $Person.Name.FamilyName.substring(3, $iteration) # must match fieldmapping generation
+                        $tempInitials = ("{0}{1}" -f $ysisInitials, $extraChars)
                     }
                     else {
                         $tempInitials = $ysisInitials
@@ -79,7 +80,8 @@ function Resolve-YsisError {
         }
         if (-not [string]::IsNullOrEmpty($ErrorObject.ErrorDetails.Message)) {
             $httpErrorObj.ErrorDetails = $ErrorObject.ErrorDetails.Message
-        } elseif ($ErrorObject.Exception.GetType().FullName -eq 'System.Net.WebException') {
+        }
+        elseif ($ErrorObject.Exception.GetType().FullName -eq 'System.Net.WebException') {
             if ($null -ne $ErrorObject.Exception.Response) {
                 $streamReaderResponse = [System.IO.StreamReader]::new($ErrorObject.Exception.Response.GetResponseStream()).ReadToEnd()
                 if (-not [string]::IsNullOrEmpty($streamReaderResponse)) {
@@ -92,9 +94,12 @@ function Resolve-YsisError {
         }
         try {
             $errorDetailsObject = ($httpErrorObj.ErrorDetails | ConvertFrom-Json)
-            $httpErrorObj.ErrorDetails = "Message: $($errorDetailsObject.detail), type: $($errorDetailsObject.scimType)"
-            $httpErrorObj.FriendlyMessage = "$($errorDetailsObject.detail), type: $($errorDetailsObject.scimType)"
-        } catch {
+            if ($errorDetailsObject.PSObject.Properties.Name -contains 'scimType') {
+                $httpErrorObj.ErrorDetails = "Message: $($errorDetailsObject.detail), type: $($errorDetailsObject.scimType)"
+                $httpErrorObj.FriendlyMessage = "$($errorDetailsObject.detail), type: $($errorDetailsObject.scimType)"
+            }
+        }
+        catch {
             $httpErrorObj.FriendlyMessage = $httpErrorObj.ErrorDetails
         }
         Write-Output $httpErrorObj
@@ -218,29 +223,7 @@ try {
             }
         }
 
-        try {
-            $responseAccessToken = Invoke-RestMethod @splatRequestToken -Verbose:$false
-        }
-        catch {
-            write-error "$($_)"
-            $ex = $PSItem
-            if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
-                $errorObj = Resolve-YsisError -ErrorObject $ex
-                $auditMessage = "Could not retrieve Ysis Token. Error: $($errorObj.FriendlyMessage)"
-                Write-Warning "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
-            }
-            else {
-                $auditMessage = "Could not retrieve Ysis Token. Error: $($ex.Exception.Message)"
-                Write-Warning "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
-            }
-            $outputContext.AuditLogs.Add([PSCustomObject]@{
-                    Action  = "CreateAccount"
-                    Message = $auditMessage
-                    IsError = $false
-                })
-            throw "Token error"
-        }
-
+        $responseAccessToken = Invoke-RestMethod @splatRequestToken -Verbose:$false
         $headers = [System.Collections.Generic.Dictionary[string, string]]::new()
         $headers.Add('Authorization', "Bearer $($responseAccessToken.access_token)")
         $headers.Add('Accept', 'application/json; charset=utf-8')
@@ -280,8 +263,8 @@ try {
                     IsError = $false
                 })
 
-                # Update is handled in the update script
-                $outputContext.AccountCorrelated = $True
+            # Update is handled in the update script
+            $outputContext.AccountCorrelated = $true
         }
     }
 
@@ -299,28 +282,28 @@ try {
         if ([string]::IsNullOrEmpty($account.employeeNumber)) {
             Write-Warning "No employeenumber mapped for account"
             $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "CreateAccount"
-                Message = "Failed to create account with username [$($account.UserName)]: No employeenumber mapped for account"
-                IsError = $true
-            })
+                    Action  = "CreateAccount"
+                    Message = "Failed to create account with username [$($account.UserName)]: No employeenumber mapped for account"
+                    IsError = $true
+                })
         }
 
         if ([string]::IsNullOrEmpty($account.Discipline)) {
             Write-Warning "No entry found in the discipline mapping found for title [$($account.Position)] with externalId [$disciplineSearchValue]"
             $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "CreateAccount"
-                Message = "Failed to create account with username [$($account.UserName)]: No entry found in discipline mapping for title [$($account.Position)] with externalId [$disciplineSearchValue]"
-                IsError = $true
-            })
+                    Action  = "CreateAccount"
+                    Message = "Failed to create account with username [$($account.UserName)]: No entry found in discipline mapping for title [$($account.Position)] with externalId [$disciplineSearchValue]"
+                    IsError = $true
+                })
         }
 
         if ($mappedObject.Count -gt 1) {
             Write-Warning "Multiple entries found in discipline mapping for title [$($account.Position)] with externalId [$disciplineSearchValue]: [$($mappedObject.Discipline -join ", ")]"
             $outputContext.AuditLogs.Add([PSCustomObject]@{
-                Action  = "CreateAccount"
-                Message = "Failed to create account with username [$($account.UserName)]: Multiple entries found in discipline mapping for title [$($account.Position)] with externalId [$disciplineSearchValue]: [$($mappedObject.Discipline -join ", ")]"
-                IsError = $true
-            })
+                    Action  = "CreateAccount"
+                    Message = "Failed to create account with username [$($account.UserName)]: Multiple entries found in discipline mapping for title [$($account.Position)] with externalId [$disciplineSearchValue]: [$($mappedObject.Discipline -join ", ")]"
+                    IsError = $true
+                })
         }
         if ($outputContext.AuditLogs.isError -contains $true) {
             Throw "Error(s) occured while looking up required values"
@@ -345,6 +328,7 @@ try {
                 if (-not($actionContext.DryRun -eq $true)) {
                     $responseCreateUser = Invoke-RestMethod @splatCreateUserParams -Verbose:$false
                     $outputContext.AccountReference = $responseCreateUser.id
+                    $account.ysisInitials = $ysisAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials
                 }
                 else {
                     Write-Warning "[DryRun] Will send: $($splatCreateUserParams.Body)"
@@ -392,6 +376,9 @@ try {
 }
 catch {
     $ex = $PSItem
+    if ($_.Exception.Response.StatusCode -eq 401) {
+        Write-Warning $_
+    }
     if (-not($ex.Exception.Message -eq 'Token error' -or $ex.Exception.Message -eq 'Error(s) occured while looking up required values')) {
         if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
             $errorObj = Resolve-YsisError -ErrorObject $ex

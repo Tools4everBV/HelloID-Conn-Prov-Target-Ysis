@@ -37,7 +37,8 @@ function Resolve-YsisError {
         }
         if (-not [string]::IsNullOrEmpty($ErrorObject.ErrorDetails.Message)) {
             $httpErrorObj.ErrorDetails = $ErrorObject.ErrorDetails.Message
-        } elseif ($ErrorObject.Exception.GetType().FullName -eq 'System.Net.WebException') {
+        }
+        elseif ($ErrorObject.Exception.GetType().FullName -eq 'System.Net.WebException') {
             if ($null -ne $ErrorObject.Exception.Response) {
                 $streamReaderResponse = [System.IO.StreamReader]::new($ErrorObject.Exception.Response.GetResponseStream()).ReadToEnd()
                 if (-not [string]::IsNullOrEmpty($streamReaderResponse)) {
@@ -50,9 +51,12 @@ function Resolve-YsisError {
         }
         try {
             $errorDetailsObject = ($httpErrorObj.ErrorDetails | ConvertFrom-Json)
-            $httpErrorObj.ErrorDetails = "Message: $($errorDetailsObject.detail), type: $($errorDetailsObject.scimType)"
-            $httpErrorObj.FriendlyMessage = "$($errorDetailsObject.detail), type: $($errorDetailsObject.scimType)"
-        } catch {
+            if ($errorDetailsObject.PSObject.Properties.Name -contains 'scimType') {
+                $httpErrorObj.ErrorDetails = "Message: $($errorDetailsObject.detail), type: $($errorDetailsObject.scimType)"
+                $httpErrorObj.FriendlyMessage = "$($errorDetailsObject.detail), type: $($errorDetailsObject.scimType)"
+            }
+        }
+        catch {
             $httpErrorObj.FriendlyMessage = $httpErrorObj.ErrorDetails
         }
         Write-Output $httpErrorObj
@@ -156,21 +160,21 @@ try {
     $account.YsisInitials = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials
 
     $previousAccount = [PSCustomObject]@{
-        AgbCode             = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.agbCode
-        BigNumber           = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.bigNumber
-        Discipline          = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline
-        YsisInitials        = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials
-        Email               = $currentAccount.Emails.Value
-        Gender              = $currentAccount.gender
-        FamilyName          = $currentAccount.name.familyName
-        GivenName           = $currentAccount.name.givenName
-        Infix               = $currentAccount.name.infix
-        Initials            = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.initials
-        EmployeeNumber      = $currentAccount.'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User'.employeeNumber
-        Position            = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.position
-        MobilePhone         = ($($currentAccount.phoneNumbers) | Where-Object Type -eq 'mobile').value
-        WorkPhone           = ($($currentAccount.phoneNumbers) | Where-Object Type -eq 'work').value
-        UserName            = $currentAccount.userName
+        AgbCode              = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.agbCode
+        BigNumber            = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.bigNumber
+        Discipline           = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline
+        YsisInitials         = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials
+        Email                = $currentAccount.Emails.Value
+        Gender               = $currentAccount.gender
+        FamilyName           = $currentAccount.name.familyName
+        GivenName            = $currentAccount.name.givenName
+        Infix                = $currentAccount.name.infix
+        Initials             = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.initials
+        EmployeeNumber       = $currentAccount.'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User'.employeeNumber
+        Position             = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.position
+        MobilePhone          = ($($currentAccount.phoneNumbers) | Where-Object Type -eq 'mobile').value
+        WorkPhone            = ($($currentAccount.phoneNumbers) | Where-Object Type -eq 'work').value
+        UserName             = $currentAccount.userName
         exportTimelineEvents = $currentAccount.exportTimelineEvents
     }
 
@@ -195,7 +199,8 @@ try {
         exportTimelineEvents                                         = $currentAccount.exportTimelineEvents
         emails                                                       = @(
             [PSCustomObject]@{
-                value = $account.Email
+                # value = $account.Email # Use value from mapping
+                value = $currentAccount.Emails.Value
             }
         )
         phoneNumbers                                                 = @(
@@ -216,10 +221,10 @@ try {
             ysisInitials = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials
             discipline   = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.discipline
             #agbCode      = $account.AgbCode # Use value from mapping
-            agbCode       = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.agbCode # Use current value in Ysis
+            agbCode      = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.agbCode # Use current value in Ysis
             initials     = $account.Initials
             #bigNumber    = $account.BigNumber # Use value from mapping
-            bigNumber     = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.bigNumber # Use current value in Ysis
+            bigNumber    = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.bigNumber # Use current value in Ysis
             position     = $account.Position
             modules      = $currentAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.modules
         }
@@ -231,19 +236,19 @@ try {
     if ([string]::IsNullOrEmpty($account.Discipline)) {
         Write-Warning "Discipline mapping not found for [$($account.Position)] [$disciplineSearchValue]"
         $outputContext.AuditLogs.Add([PSCustomObject]@{
-            Action  = "UpdateAccount"
-            Message = "Failed to update account [$($account.UserName)]: No entry found in discipline mapping for title [$($account.Position)] with externalId [$disciplineSearchValue]"
-            IsError = $true
-        })
+                Action  = "UpdateAccount"
+                Message = "Failed to update account [$($account.UserName)]: No entry found in discipline mapping for title [$($account.Position)] with externalId [$disciplineSearchValue]"
+                IsError = $true
+            })
     }
 
     if ($mappedObject.Count -gt 1) {
         Write-Warning "Multiple discipline-mappings found for [$($account.Position)] [$disciplineSearchValue]"
         $outputContext.AuditLogs.Add([PSCustomObject]@{
-            Action  = "UpdateAccount"
-            Message = "Failed to update account [$($account.UserName)]: Multiple entries found in discipline mapping for title [$($account.Position)] with externalId [$disciplineSearchValue]: [$($mappedObject.Discipline -join ", ")]"
-            IsError = $true
-        })
+                Action  = "UpdateAccount"
+                Message = "Failed to update account [$($account.UserName)]: Multiple entries found in discipline mapping for title [$($account.Position)] with externalId [$disciplineSearchValue]: [$($mappedObject.Discipline -join ", ")]"
+                IsError = $true
+            })
     }
     if ($outputContext.AuditLogs.isError -contains $true) {
         Throw "Error(s) occured while looking up required values"
@@ -259,7 +264,6 @@ try {
     $newProperties = $changedProperties.Where( { $_.SideIndicator -eq '=>' })
 
     if (($newProperties | Measure-Object).Count -ge 1) {
-
         Write-Verbose "Updating Ysis account with accountReference: [$($actionContext.References.Account)]"
         $splatUpdateUserParams = @{
             Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
@@ -282,12 +286,15 @@ try {
             })
     }
     else {
-        Write-Warning "No Updates for Ysis account with username [$($account.userName)] and accountReference [$($actionContext.References.Account)]"
+        Write-Information "No Updates for Ysis account with username [$($account.userName)] and accountReference [$($actionContext.References.Account)]"
     }
 }
 catch {
     $ex = $PSItem
-    if (-not($ex.Exception.Message -eq 'AccountNotFound'-or $ex.Exception.Message -eq 'Error(s) occured while looking up required values')) {
+    if ($_.Exception.Response.StatusCode -eq 401) {
+        Write-Warning $_
+    }
+    if (-not($ex.Exception.Message -eq 'AccountNotFound' -or $ex.Exception.Message -eq 'Error(s) occured while looking up required values')) {
         if ($($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
             $errorObj = Resolve-YsisError -ErrorObject $ex
             $auditMessage = "Could not update Ysis account. Error: $($errorObj.FriendlyMessage)"
