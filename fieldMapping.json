@@ -121,8 +121,8 @@
             "Create",
             "Update"
           ],
-          "MappingMode": "Complex",
-          "Value": "\"function getInitials() {\\n    let initials = Person.Name.NickName.slice(0,1)\\n    return initials\\n}\\n\\ngetInitials();\"",
+          "MappingMode": "Field",
+          "Value": "\"Person.Name.Initials\"",
           "UsedInNotifications": false,
           "StoreInAccountData": false
         }
@@ -151,11 +151,19 @@
         {
           "MapForActions": [
             "Create",
-            "Delete",
             "Update"
           ],
           "MappingMode": "Complex",
           "Value": "\"//YSIS only accepts one e-mailadress\\r\\nfunction GetMailAddress(){   \\r\\n\\r\\n    let mail = \\\"\\\"    \\r\\n    \\r\\n    if(typeof Person.Accounts.MicrosoftActiveDirectory.mail !== 'undefined' && Person.Accounts.MicrosoftActiveDirectory.mail) {        \\r\\n        mail = Person.Accounts.MicrosoftActiveDirectory.mail\\r\\n    }   \\r\\n    \\r\\n    return mail\\r\\n}\\r\\nGetMailAddress()\"",
+          "UsedInNotifications": true,
+          "StoreInAccountData": false
+        },
+        {
+          "MapForActions": [
+            "Delete"
+          ],
+          "MappingMode": "None",
+          "Value": "null",
           "UsedInNotifications": true,
           "StoreInAccountData": false
         }
@@ -167,8 +175,7 @@
       "MappingActions": [
         {
           "MapForActions": [
-            "Create",
-            "Delete"
+            "Create"
           ],
           "MappingMode": "Complex",
           "Value": "\"// Please enter the mapping logic to generate the Ysis initials.\\r\\nfunction capitalizeFirstLetter(string) {\\r\\n    return string.charAt(0).toUpperCase() + string.slice(1);\\r\\n}\\r\\n\\r\\nfunction ysisInitials() {\\r\\n\\tlet firstName = Person.Name.NickName;\\r\\n\\tlet lastName = Person.Name.FamilyName;\\r\\n    firstName = capitalizeFirstLetter(firstName)\\r\\n    lastName = capitalizeFirstLetter(lastName)\\r\\n    //let ysisInitials = firstName.trim().padEnd(2,'X').substring(0,2) + lastName.trim().padEnd(3,'X').substring(0,3);\\r\\n    let ysisInitials = lastName.trim().padEnd(2,'x').substring(0,2) + firstName.trim().padEnd(2,'x').substring(0,2)\\r\\n    \\r\\n    //Remove diacritical chars\\r\\n\\tysisInitials = deleteDiacriticalMarks(ysisInitials); \\r\\n    //return ysisInitials.toUpperCase();\\r\\n    return ysisInitials\\r\\n}\\r\\nysisInitials();\"",
@@ -177,11 +184,12 @@
         },
         {
           "MapForActions": [
+            "Delete",
             "Update"
           ],
           "MappingMode": "None",
           "Value": "null",
-          "UsedInNotifications": false,
+          "UsedInNotifications": true,
           "StoreInAccountData": true
         }
       ]
@@ -226,19 +234,11 @@
       "MappingActions": [
         {
           "MapForActions": [
-            "Create"
+            "Create",
+            "Update"
           ],
           "MappingMode": "Complex",
           "Value": "\"//YSIS only accepts one e-mailadress\\r\\nfunction GetMailAddresses(){   \\r\\n\\r\\n    let mail = \\\"\\\"    \\r\\n    \\r\\n    if(typeof Person.Accounts.MicrosoftActiveDirectory.mail !== 'undefined' && Person.Accounts.MicrosoftActiveDirectory.mail) {        \\r\\n        mail = Person.Accounts.MicrosoftActiveDirectory.mail\\r\\n    }   \\r\\n    \\r\\n    return mail\\r\\n}\\r\\nGetMailAddresses()\"",
-          "UsedInNotifications": false,
-          "StoreInAccountData": false
-        },
-        {
-          "MapForActions": [
-            "Update"
-          ],
-          "MappingMode": "None",
-          "Value": "\"\"",
           "UsedInNotifications": false,
           "StoreInAccountData": false
         }
