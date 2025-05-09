@@ -57,8 +57,8 @@
             "Create",
             "Update"
           ],
-          "MappingMode": "None",
-          "Value": "null",
+          "MappingMode": "Fixed",
+          "Value": "\"\"",
           "UsedInNotifications": true,
           "StoreInAccountData": true
         }
