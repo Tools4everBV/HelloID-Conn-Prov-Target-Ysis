@@ -110,7 +110,6 @@ try {
                 DisplayName    = "Role: $($r.displayName)"
                 Identification = @{
                     Reference   = $r.value
-                    DisplayName = "Role: $($r.displayName)"
                 }
             }
         )
@@ -130,5 +129,4 @@ catch {
     else {
         Write-Warning "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
     }
-
 }

@@ -97,7 +97,7 @@ try {
         if ($_.Exception.Response.StatusCode -eq 404) {
             $outputContext.AuditLogs.Add([PSCustomObject]@{
                     Action  = "GrantPermission"
-                    Message = "Unable to assign permission [$($actionContext.References.Permission.DisplayName)]. Ysis account for [$($person.DisplayName)] not found. Account is possibly deleted"
+                    Message = "Unable to assign permission [$($actionContext.PermissionDisplayName)]. Ysis account for [$($person.DisplayName)] not found. Account is possibly deleted"
                     IsError = $true
                 })
             throw "AccountNotFound"
@@ -107,11 +107,11 @@ try {
     
     # Process
     Write-Verbose "Pre: all assigned roles ($($responseUser.roles.count)): $($responseUser.roles.displayName -join ", ")"
-    Write-Information "Granting Ysis entitlement: [$($actionContext.References.Permission.DisplayName)]"
+    Write-Information "Granting Ysis entitlement: [$($actionContext.PermissionDisplayName)]"
     if ($responseUser.roles.count -eq 0 -or $actionContext.References.Permission.Reference -notin $responseUser.roles.value) {
         $responseUser.roles += ([PSCustomObject]@{
                 value       = $actionContext.References.Permission.Reference
-                displayName = $actionContext.References.Permission.DisplayName
+                displayName = $actionContext.PermissionDisplayName
             })
 
         $splatParams = @{
@@ -132,12 +132,12 @@ try {
         Write-Verbose "Post: all assigned roles ($($responseUser.roles.count)): $($responseUser.roles.displayName -join ", ")"
     }
     else {
-        Write-Warning "Permission [($($actionContext.References.Permission.DisplayName))] was already assigned in Ysis"
+        Write-Warning "Permission [($($actionContext.PermissionDisplayName))] was already assigned in Ysis"
     }
 
     $outputContext.Success = $true
     $outputContext.AuditLogs.Add([PSCustomObject]@{
-            Message = "Grant permission [$($actionContext.References.Permission.DisplayName)] to account with Ysis Initials [$($responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)] was successful"
+            Message = "Grant permission [$($actionContext.PermissionDisplayName)] to account with Ysis Initials [$($responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)] was successful"
             IsError = $false
         })
 }
@@ -149,11 +149,11 @@ catch {
     if ($($ex.Exception.GetType().FullName -eq 'Microsoft.PowerShell.Commands.HttpResponseException') -or
         $($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
         $errorObj = Resolve-YsisError -ErrorObject $ex
-        $auditMessage = "Could not grant Ysis permission [$($actionContext.References.Permission.DisplayName)]. Error: $($errorObj.FriendlyMessage)"
+        $auditMessage = "Could not grant Ysis permission [$($actionContext.PermissionDisplayName)]. Error: $($errorObj.FriendlyMessage)"
         Write-Warning "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
     }
     else {
-        $auditMessage = "Could not grant Ysis permission [$($actionContext.References.Permission.DisplayName)]. Error: $($_.Exception.Message)"
+        $auditMessage = "Could not grant Ysis permission [$($actionContext.PermissionDisplayName)]. Error: $($_.Exception.Message)"
         Write-Warning "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
     }
     $outputContext.AuditLogs.Add([PSCustomObject]@{

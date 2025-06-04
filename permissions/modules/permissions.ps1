@@ -8,7 +8,6 @@ $outputContext.Permissions.Add(
         DisplayName    = "Module: Behandeldossier"
         Identification = @{
             Reference = "YSIS_CORE"
-            DisplayName  = "Module: Behandeldossier"
         }
     }
 )
@@ -18,7 +17,6 @@ $outputContext.Permissions.Add(
         DisplayName    = "Module: Financieel voor GRZ, Basis GGZ, ELV en ZPM"
         Identification = @{
             Reference = "YSIS_DBC"
-            DisplayName    = "Module: Financieel voor GRZ, Basis GGZ, ELV en ZPM"
         }
     }
 )
@@ -38,7 +36,6 @@ $outputContext.Permissions.Add(
         DisplayName    = "Module: Financieel voor eerstelijns paramedische zorg, huisartsenzorg en GSZP"
         Identification = @{
             Reference   = "FINANCIAL"
-            DisplayName = "Module: Financieel voor eerstelijns paramedische zorg, huisartsenzorg en GSZP"
         }
     }
 )
@@ -48,7 +45,6 @@ $outputContext.Permissions.Add(
         DisplayName    = "Module: Portaal financiële koppeling"
         Identification = @{
             Reference   = "FINANCIAL_EXPORT_PORTAL"
-            DisplayName = "Module: Portaal financiële koppeling"
         }
     }
 )
@@ -59,7 +55,6 @@ $outputContext.Permissions.Add(
 #         DisplayName    = "Module: Administratieve ondersteuning"
 #         Identification = @{
 #             Reference   = "MANAGEMENT"
-#             DisplayName = "Module: Administratieve ondersteuning"
 #         }
 #     }
 # )
@@ -69,7 +64,6 @@ $outputContext.Permissions.Add(
         DisplayName    = "Module: Gebruikersbeheer"
         Identification = @{
             Reference   = "USER_MANAGEMENT"
-            DisplayName = "Module: Gebruikersbeheer"
         }
     }
 )

@@ -96,7 +96,7 @@ try {
     catch {
         if ($_.Exception.Response.StatusCode -eq 404) {
             $outputContext.AuditLogs.Add([PSCustomObject]@{
-                    Message = "Unable to revoke permission [$($actionContext.References.Permission.displayName)]. Ysis account for [$($person.DisplayName)] not found. Possibly deleted"
+                    Message = "Unable to revoke permission [$($actionContext.PermissionDisplayName)]. Ysis account for [$($person.DisplayName)] not found. Possibly deleted"
                     IsError = $false
                 })
             throw "AccountNotFound"
@@ -106,7 +106,7 @@ try {
 
     # Process
     Write-Verbose "Pre: all assigned roles ($($responseUser.roles.count)): $($responseUser.roles.displayName -join ", ")"
-    Write-Information "Revoking Ysis entitlement: [$($actionContext.References.Permission.DisplayName)]"
+    Write-Information "Revoking Ysis entitlement: [$($actionContext.PermissionDisplayName)]"
 
     if ($responseUser.roles.count -gt 0 -and $actionContext.References.Permission.Reference -in $responseUser.roles.value) {
         [Array]$responseUser.roles = $responseUser.roles | Where-Object { $_.value -notcontains $actionContext.References.Permission.Reference }
@@ -128,12 +128,12 @@ try {
         Write-Verbose "Post: all assigned roles ($($responseUser.roles.count)): $($responseUser.roles.displayName -join ", ")"
     }
     else {
-        Write-Warning "Permission [$($actionContext.References.Permission.DisplayName)] is already revoked"
+        Write-Warning "Permission [$($actionContext.PermissionDisplayName)] is already revoked"
     }
 
     $outputContext.Success = $true
     $outputContext.AuditLogs.Add([PSCustomObject]@{
-            Message = "Revoke permission [$($actionContext.References.Permission.DisplayName)] from account with Ysis Initials [$($responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)] was successful"
+            Message = "Revoke permission [$($actionContext.PermissionDisplayName)] from account with Ysis Initials [$($responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)] was successful"
             IsError = $false
         })
 }
@@ -146,11 +146,11 @@ catch {
         if ($($ex.Exception.GetType().FullName -eq 'Microsoft.PowerShell.Commands.HttpResponseException') -or
             $($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
             $errorObj = Resolve-YsisError -ErrorObject $ex
-            $auditMessage = "Could not revoke Ysis permission [$($actionContext.References.Permission.DisplayName)]. Error: $($errorObj.FriendlyMessage)"
+            $auditMessage = "Could not revoke Ysis permission [$($actionContext.PermissionDisplayName)]. Error: $($errorObj.FriendlyMessage)"
             Write-Warning "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
         }
         else {
-            $auditMessage = "Could not revoke Ysis permission [$($actionContext.References.Permission.DisplayName)]. Error: $($_.Exception.Message)"
+            $auditMessage = "Could not revoke Ysis permission [$($actionContext.PermissionDisplayName)]. Error: $($_.Exception.Message)"
             Write-Warning "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
         }
         $outputContext.AuditLogs.Add([PSCustomObject]@{
