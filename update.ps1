@@ -67,6 +67,28 @@ try {
     # Create account object from mapped data and set the correct account reference
     $account = $actionContext.Data
 
+    if(-not($account.PSObject.Properties.Name -Contains 'Discipline')){
+        $account | Add-Member -NotePropertyName 'Discipline' -NotePropertyValue $null -Force
+    }
+    if(-not($account.PSObject.Properties.Name -Contains 'AgbCode')){
+        $account | Add-Member -NotePropertyName 'AgbCode' -NotePropertyValue $null -Force
+    }
+    if(-not($account.PSObject.Properties.Name -Contains 'BigNumber')){
+        $account | Add-Member -NotePropertyName 'BigNumber' -NotePropertyValue $null -Force
+    }
+    if(-not($account.PSObject.Properties.Name -Contains 'WorkPhone')){
+        $account | Add-Member -NotePropertyName 'WorkPhone' -NotePropertyValue $null -Force
+    }
+    if(-not($account.PSObject.Properties.Name -Contains 'MobilePhone')){
+        $account | Add-Member -NotePropertyName 'MobilePhone' -NotePropertyValue $null -Force
+    }
+    if(-not($account.PSObject.Properties.Name -Contains 'exportTimelineEvents')){
+        $account | Add-Member -NotePropertyName 'exportTimelineEvents' -NotePropertyValue $null -Force
+    }
+    if(-not($account.PSObject.Properties.Name -Contains 'YsisInitials')){
+        $account | Add-Member -NotePropertyName 'YsisInitials' -NotePropertyValue $null -Force
+    }
+
     # Remove ID field because only used for export data
     if ($account.PSObject.Properties.Name -Contains 'id') {
         $account.PSObject.Properties.Remove('id')
