@@ -1,5 +1,5 @@
 ###################################################################
-# HelloID-Conn-Prov-Target-Ysis-Permissions-Roles-GrantPermission
+# HelloID-Conn-Prov-Target-Ysis-Permissions-Roles-Permission
 # PowerShell V2
 ###################################################################
 
