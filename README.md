@@ -153,7 +153,7 @@ A conditional event needs to be set up based on changes of the discipline. On th
 > How to configure:
 > 1. Make sure `Discipline` is added in the field mapping.
 > 2. Go to Business Custom events, create a new custom event. Select the Ysis connector, action `Account update` and add a condition with field `Discipline` is updated.
-> 3. Go to Notifications Configuration, create a new notification. Select your Ysis custom event. Import the [_conditional-notification.mjml_](./conditional-notification.mjml) template.
+> 3. Go to Notifications Configuration, create a new notification. Select your Ysis custom event. Import the [_conditional-notification.mjml_](./assets/ConditionalNotification.mjml) template.
 >
 > _For more information custom events, please refer to our [documentation](https://docs.helloid.com/en/provisioning/notifications--provisioning-/custom-notification-events--conditional-notifications-.html) pages_.
 
