@@ -139,11 +139,13 @@ try {
         throw $_
     }
 
+    $sortableEndDate = { if ([string]::IsNullOrEmpty($_.EndDate)) { [datetime]::MaxValue } else { $_.EndDate } }
+
     # Primary Contract Calculation foreach employment
     $firstProperty = @{ Expression = { $_.Details.Fte }; Descending = $true }
     $secondProperty = @{ Expression = { $_.Details.HoursPerWeek }; Descending = $true }
     $thirdProperty = @{ Expression = { $_.Details.Sequence }; Descending = $true }
-    $fourthProperty = @{ Expression = { $_.EndDate }; Descending = $true }
+    $fourthProperty = @{ Expression = { $sortableEndDate }; Descending = $true }
     $fifthProperty = @{ Expression = { $_.StartDate }; Descending = $false }
     $sixthProperty = @{ Expression = { $_.ExternalId }; Descending = $false }
 
