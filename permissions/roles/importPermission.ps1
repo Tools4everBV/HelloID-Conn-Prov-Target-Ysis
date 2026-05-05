@@ -11,41 +11,38 @@ try {
 
 
     $splatRequestToken = @{
-		Uri    = "$($actionContext.Configuration.BaseUrl)/cas/oauth/token"
-		Method = 'POST'
-		Body   = @{
-			client_id     = $($actionContext.Configuration.ClientID)
-			client_secret = $($actionContext.Configuration.ClientSecret)
-			scope         = 'scim'
-			grant_type    = 'client_credentials'
-		}
-	}
+        Uri    = "$($actionContext.Configuration.BaseUrl)/cas/oauth/token"
+        Method = 'POST'
+        Body   = @{
+            client_id     = $($actionContext.Configuration.ClientID)
+            client_secret = $($actionContext.Configuration.ClientSecret)
+            scope         = 'scim'
+            grant_type    = 'client_credentials'
+        }
+    }
 
     $responseAccessToken = Invoke-RestMethod @splatRequestToken -Verbose:$false
-	$headers = [System.Collections.Generic.Dictionary[string, string]]::new()
-	$headers.Add('Authorization', "Bearer $($responseAccessToken.access_token)")
-	$headers.Add('Accept', 'application/json; charset=utf-8')
-	$headers.Add('Content-Type', 'application/json')
+    $headers = [System.Collections.Generic.Dictionary[string, string]]::new()
+    $headers.Add('Authorization', "Bearer $($responseAccessToken.access_token)")
+    $headers.Add('Accept', 'application/json; charset=utf-8')
+    $headers.Add('Content-Type', 'application/json')
 
-	$splatParams = @{
-		Uri         = "$($actionContext.Configuration.BaseUrl)/gm/api/um/scim/v2/users?filter=urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:employeeNumber%20pr%20"
-		Method      = 'GET'
-		Headers     = $headers
-		ContentType = 'application/json'
-	}
-	$existingAccounts = Invoke-RestMethod @splatParams -Verbose:$false
+    $splatParams = @{
+        Uri         = "$($actionContext.Configuration.BaseUrl)/gm/api/um/scim/v2/users?filter=urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:employeeNumber%20pr%20"
+        Method      = 'GET'
+        Headers     = $headers
+        ContentType = 'application/json'
+    }
+    $existingAccounts = Invoke-RestMethod @splatParams -Verbose:$false
 
     # Map the imported data to the account field mappings
     foreach ($account in $existingAccounts) {
-    
-
-        foreach ($role in $account.roles){
+        foreach ($role in $account.roles) {
             $permission = @{
                 PermissionReference = @{
                     Reference = $role.value
                 }       
-                DisplayName         = "Role: $($role.displayName)"
-                AccountReferences = @($account.id)
+                AccountReferences   = @($account.id)
             }
 
             # Return the result
