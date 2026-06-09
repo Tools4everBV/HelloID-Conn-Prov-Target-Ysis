@@ -3,17 +3,8 @@
 # PowerShell V2
 ###################################################################
 
-# Initialize default values
-$config = $actionContext.Configuration
-
 # Enable TLS1.2
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
-
-# Set debug logging
-switch ($($actionContext.Configuration.isDebug)) {
-    $true { $VerbosePreference = 'Continue' }
-    $false { $VerbosePreference = 'SilentlyContinue' }
-}
 
 
 function Resolve-YsisError {
@@ -62,7 +53,7 @@ function Get-AccountRoles {
     [cmdletbinding()]
     Param ()
     try {
-        Write-Verbose 'Adding Authorization headers'
+        Write-Information 'Adding Authorization headers'
         $headers = [System.Collections.Generic.Dictionary[string, string]]::new()
         $headers.Add('Authorization', "Bearer $($responseAccessToken.access_token)")
         $headers.Add('Accept', 'application/json; charset=utf-8')
@@ -70,7 +61,7 @@ function Get-AccountRoles {
 
         # Get Role
         $splatRoleParams = @{
-            Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/roles"
+            Uri         = "$($actionContext.Configuration.BaseUrl)/gm/api/um/scim/v2/roles"
             Method      = 'GET'
             Headers     = $headers
             ContentType = 'application/json'
@@ -90,11 +81,11 @@ function Get-AccountRoles {
 try {
     # Requesting authorization token
     $splatRequestToken = @{
-        Uri    = "$($config.BaseUrl)/cas/oauth/token"
+        Uri    = "$($actionContext.Configuration.BaseUrl)/cas/oauth/token"
         Method = 'POST'
         Body   = @{
-            client_id     = $($config.ClientID)
-            client_secret = $($config.ClientSecret)
+            client_id     = $($actionContext.Configuration.ClientID)
+            client_secret = $($actionContext.Configuration.ClientSecret)
             scope         = 'scim'
             grant_type    = 'client_credentials'
         }

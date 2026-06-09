@@ -3,17 +3,8 @@
 # PowerShell V2
 ###################################################################
 
-# Initialize default values
-$config = $actionContext.Configuration
-
 # Enable TLS1.2
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
-
-# Set debug logging
-switch ($($actionContext.Configuration.isDebug)) {
-    $true { $VerbosePreference = 'Continue' }
-    $false { $VerbosePreference = 'SilentlyContinue' }
-}
 
 #region functions
 function Resolve-YsisError {
@@ -68,11 +59,11 @@ try {
 
     # Requesting authorization token
     $splatRequestToken = @{
-        Uri    = "$($config.BaseUrl)/cas/oauth/token"
+        Uri    = "$($actionContext.Configuration.BaseUrl)/cas/oauth/token"
         Method = 'POST'
         Body   = @{
-            client_id     = $($config.ClientID)
-            client_secret = $($config.ClientSecret)
+            client_id     = $($actionContext.Configuration.ClientID)
+            client_secret = $($actionContext.Configuration.ClientSecret)
             scope         = 'scim'
             grant_type    = 'client_credentials'
         }
@@ -87,7 +78,7 @@ try {
     Write-Information "Verifying if a Ysis account for [$($personContext.Person.DisplayName)] exists"
     try {
         $splatParams = @{
-            Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
+            Uri         = "$($actionContext.Configuration.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
             Headers     = $headers
             ContentType = 'application/scim+json;charset=UTF-8'
         }
@@ -97,7 +88,7 @@ try {
         if ($_.Exception.Response.StatusCode -eq 404) {
             $outputContext.AuditLogs.Add([PSCustomObject]@{
                     Action  = "GrantPermission"
-                    Message = "Unable to assign permission [$($actionContext.PermissionDisplayName)]. Ysis account for [$($person.DisplayName)] not found. Account is possibly deleted"
+                    Message = "Unable to assign permission [$($actionContext.PermissionDisplayName)]. Ysis account for [$($personContext.Person.DisplayName)] not found. Account is possibly deleted"
                     IsError = $true
                 })
             throw "AccountNotFound"
@@ -106,7 +97,7 @@ try {
     }
     
     # Process
-    Write-Verbose "Pre: all assigned roles ($($responseUser.roles.count)): $($responseUser.roles.displayName -join ", ")"
+    Write-Information "Pre: all assigned roles ($($responseUser.roles.count)): $($responseUser.roles.displayName -join ", ")"
     Write-Information "Granting Ysis entitlement: [$($actionContext.PermissionDisplayName)]"
     if ($responseUser.roles.count -eq 0 -or $actionContext.References.Permission.Reference -notin $responseUser.roles.value) {
         $responseUser.roles += ([PSCustomObject]@{
@@ -115,7 +106,7 @@ try {
             })
 
         $splatParams = @{
-            Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
+            Uri         = "$($actionContext.Configuration.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
             Headers     = $headers
             Method      = 'PUT'
             Body        = ($responseUser | ConvertTo-Json -Depth 10)
@@ -129,7 +120,7 @@ try {
             $null = Invoke-RestMethod @splatParams -Verbose:$false
         }
 
-        Write-Verbose "Post: all assigned roles ($($responseUser.roles.count)): $($responseUser.roles.displayName -join ", ")"
+        Write-Information "Post: all assigned roles ($($responseUser.roles.count)): $($responseUser.roles.displayName -join ", ")"
     }
     else {
         Write-Warning "Permission [($($actionContext.PermissionDisplayName))] was already assigned in Ysis"

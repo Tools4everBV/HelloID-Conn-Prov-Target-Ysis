@@ -4,20 +4,12 @@
 ########################################
 
 # Initialize default values
-$config = $actionContext.Configuration
-$person = $personContext.Person
 $disciplineSearchField = "JobTitleId" # fieldname in CSV
 
 $outputContext.AccountReference = 'Currently not available'
 
 # Enable TLS1.2
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
-
-# Set debug logging
-switch ($($actionContext.Configuration.isDebug)) {
-    $true { $VerbosePreference = 'Continue' }
-    $false { $VerbosePreference = 'SilentlyContinue' }
-}
 
 #region functions
 function Set-YsisInitials-Iteration {
@@ -38,9 +30,9 @@ function Set-YsisInitials-Iteration {
                     break
                 }
                 default {
-                    if ($Person.Name.NickName.Length -ge ($iteration + 2)) {
-                        $extraChars = $Person.Name.NickName.substring(2, $iteration)
-                        # $extraChars = $Person.Name.FamilyName.substring(3, $iteration) # must match fieldmapping generation
+                    if ($personContext.Person.Name.NickName.Length -ge ($iteration + 2)) {
+                        $extraChars = $personContext.Person.Name.NickName.substring(2, $iteration)
+                        # $extraChars = $personContext.Person.Name.FamilyName.substring(3, $iteration) # must match fieldmapping generation
                         $tempInitials = ("{0}{1}" -f $ysisInitials, $extraChars)
                     }
                     else {
@@ -159,7 +151,7 @@ try {
 
     if ($desiredContracts.length -lt 1) {
         # no contracts in scope found
-        throw "No contracts are in scope for person [$($person.DisplayName)]"
+        throw "No contracts are in scope for person [$($personContext.Person.DisplayName)]"
     }
     else {
         # contracts in scope found
@@ -169,9 +161,9 @@ try {
     }
 
     # set dynamic values
-    $mapping = Import-Csv "$($config.MappingFile)" -Delimiter ";" -Encoding Default
+    $mapping = Import-Csv "$($actionContext.Configuration.MappingFile)" -Delimiter ";" -Encoding Default
 
-    Write-Verbose "Searching within the mapping csv for value [$($disciplineSearchValue)] in field [$($disciplineSearchField)]"
+    Write-Information "Searching within the mapping csv for value [$($disciplineSearchValue)] in field [$($disciplineSearchField)]"
 
     $mappedObject = $mapping | Where-Object { $_.$disciplineSearchField -eq $disciplineSearchValue }
     $account.Discipline = $mappedObject.Discipline
@@ -232,11 +224,11 @@ try {
 
         # Requesting authorization token
         $splatRequestToken = @{
-            Uri    = "$($config.BaseUrl)/cas/oauth/token"
+            Uri    = "$($actionContext.Configuration.BaseUrl)/cas/oauth/token"
             Method = 'POST'
             Body   = @{
-                client_id     = $($config.ClientID)
-                client_secret = $($config.ClientSecret)
+                client_id     = $($actionContext.Configuration.ClientID)
+                client_secret = $($actionContext.Configuration.ClientSecret)
                 scope         = 'scim'
                 grant_type    = 'client_credentials'
             }
@@ -249,11 +241,11 @@ try {
         $headers.Add('Content-Type', 'application/json')
 
         # Verify if a user must be either [created and correlated], [updated and correlated] or just [correlated]
-        Write-Verbose "Verifying if Ysis account for [$($person.DisplayName) - (correlationValue: $correlationValue)] exists"
+        Write-Information "Verifying if Ysis account for [$($personContext.Person.DisplayName) - (correlationValue: $correlationValue)] exists"
         $encodedString = [System.Uri]::EscapeDataString($correlationValue)
 
         $splatParams = @{
-            Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users?filter=urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:employeeNumber%20eq%20%22$encodedString%22"
+            Uri         = "$($actionContext.Configuration.BaseUrl)/gm/api/um/scim/v2/users?filter=urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:employeeNumber%20eq%20%22$encodedString%22"
             Method      = 'GET'
             Headers     = $headers
             ContentType = 'application/json'
@@ -261,7 +253,7 @@ try {
         $response = Invoke-RestMethod @splatParams -Verbose:$false
 
         if (($response | measure-object).count -gt 1) {
-            $auditMessage = "Multiple users found for [$($person.DisplayName)] with correlationValue [($correlationValue)]: [$($response.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials -join ", ")]"
+            $auditMessage = "Multiple users found for [$($personContext.Person.DisplayName)] with correlationValue [($correlationValue)]: [$($response.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials -join ", ")]"
             Throw $auditMessage
         }
         elseif (($response | measure-object).count -eq 1) {
@@ -272,7 +264,7 @@ try {
         }
 
         if ($null -ne $correlatedAccount) {
-            Write-Verbose "Ysis account correlated for [$($person.DisplayName)] with correlationValue [$correlationValue] and ysisInitials [$($correlatedAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)] [$($correlatedAccount.id)]"
+            Write-Information "Ysis account correlated for [$($personContext.Person.DisplayName)] with correlationValue [$correlationValue] and ysisInitials [$($correlatedAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)] [$($correlatedAccount.id)]"
 
             $outputContext.AccountReference = $correlatedAccount.id
 
@@ -337,7 +329,7 @@ try {
 
             try {
                 $splatCreateUserParams = @{
-                    Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users"
+                    Uri         = "$($actionContext.Configuration.BaseUrl)/gm/api/um/scim/v2/users"
                     Headers     = $headers
                     Method      = 'POST'
                     Body        = $ysisAccount | ConvertTo-Json
@@ -364,7 +356,7 @@ try {
             catch {
                 $ex = $PSItem
                 $errorObj = Resolve-YsisError -ErrorObject $ex
-                Write-Verbose "$Iterator : $($_.Exception.Response.StatusCode) - $($errorObj.FriendlyMessage)"
+                Write-Information "$Iterator : $($_.Exception.Response.StatusCode) - $($errorObj.FriendlyMessage)"
 
                 if ($_.Exception.Response.StatusCode -eq 'Conflict' -and $($errorObj.FriendlyMessage) -match "A user with the 'ysisInitials'") {
                     $Iterator++
