@@ -50,15 +50,5 @@
       "required": false,
       "description": "Because Ysis accounts cannot be dearchived by HelloID we will update the username to the YsisInitials. This will always result in a unique value so we can reuse the old username for new accounts"
     }
-  },
-  {
-    "key": "IsDebug",
-    "type": "checkbox",
-    "defaultValue": true,
-    "templateOptions": {
-      "label": "Toggle debug logging",
-      "description": "When toggled, debug logging will be displayed",
-      "required": false
-    }
   }
 ]

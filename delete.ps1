@@ -3,18 +3,8 @@
 # PowerShell V2
 #################################################
 
-# Initialize default values
-$config = $actionContext.Configuration
-$person = $personContext.Person
-
 # Enable TLS1.2
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
-
-# Set debug logging
-switch ($($actionContext.Configuration.isDebug)) {
-    $true { $VerbosePreference = 'Continue' }
-    $false { $VerbosePreference = 'SilentlyContinue' }
-}
 
 #region functions
 function Resolve-YsisError {
@@ -66,11 +56,11 @@ try {
     }
 
     $splatRequestToken = @{
-        Uri    = "$($config.BaseUrl)/cas/oauth/token"
+        Uri    = "$($actionContext.Configuration.BaseUrl)/cas/oauth/token"
         Method = 'POST'
         Body   = @{
-            client_id     = $($config.ClientID)
-            client_secret = $($config.ClientSecret)
+            client_id     = $($actionContext.Configuration.ClientID)
+            client_secret = $($actionContext.Configuration.ClientSecret)
             scope         = 'scim'
             grant_type    = 'client_credentials'
         }
@@ -78,16 +68,16 @@ try {
 
     $responseAccessToken = Invoke-RestMethod @splatRequestToken -Verbose:$false
 
-    Write-Verbose 'Adding Authorization headers'
+    Write-Information 'Adding Authorization headers'
     $headers = [System.Collections.Generic.Dictionary[string, string]]::new()
     $headers.Add('Authorization', "Bearer $($responseAccessToken.access_token)")
     $headers.Add('Accept', 'application/json')
     $headers.Add('Content-Type', 'application/json')
 
-    Write-Verbose "Verifying if Ysis account for [$($person.DisplayName)] exists"
+    Write-Information "Verifying if Ysis account for [$($personContext.Person.DisplayName)] exists"
     try {
         $splatParams = @{
-            Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
+            Uri         = "$($actionContext.Configuration.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
             Headers     = $headers
             ContentType = 'application/json'
         }
@@ -97,7 +87,7 @@ try {
         if ($_.Exception.Response.StatusCode -eq 404) {
             $outputContext.AuditLogs.Add([PSCustomObject]@{
                     Action  = "DeleteAccount"
-                    Message = "Ysis account for [$($person.DisplayName)] could not be found by account reference [$($actionContext.References.Account)] and is possibly already deleted. Skipping action"
+                    Message = "Ysis account for [$($personContext.Person.DisplayName)] could not be found by account reference [$($actionContext.References.Account)] and is possibly already deleted. Skipping action"
                     IsError = $false
                 })
             throw "AccountNotFound"
@@ -110,19 +100,19 @@ try {
         # Move dryrun below so we can dump the bodies
         $outputContext.AuditLogs.Add([PSCustomObject]@{
                 Action  = "DeleteAccount"
-                Message = "[DryRun] Delete Ysis account for [$($person.DisplayName)] with reference [$($actionContext.References.Account)] will be executed during enforcement"
+                Message = "[DryRun] Delete Ysis account for [$($personContext.Person.DisplayName)] with reference [$($actionContext.References.Account)] will be executed during enforcement"
                 IsError = $false
             })
     }
 
     if (-not($actionContext.DryRun -eq $true)) {
-        if ($config.UpdateUsernameOnDelete -eq $true) {
+        if ($actionContext.Configuration.UpdateUsernameOnDelete -eq $true) {
             # Optional update Username before "archive"
-            Write-Verbose "Updating Ysis account with accountReference: [$($actionContext.References.Account)]"
+            Write-Information "Updating Ysis account with accountReference: [$($actionContext.References.Account)]"
             $currentUserName = $responseUser.userName
             $responseUser.userName = $responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials
             $splatParams = @{
-                Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
+                Uri         = "$($actionContext.Configuration.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
                 Headers     = $headers
                 Method      = 'PUT'
                 Body        = $responseUser | ConvertTo-Json
@@ -134,11 +124,11 @@ try {
                     Message = "Username for account with Ysis Initials [$($responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)] updated from [$currentUserName] to [$($responseUser.userName)]"
                     IsError = $false
                 })
-            Write-Verbose "Username of account [$($person.DisplayName)] with reference [$($actionContext.References.Account)] updated"
+            Write-Information "Username of account [$($personContext.Person.DisplayName)] with reference [$($actionContext.References.Account)] updated"
         }
-        Write-Verbose "Deleting Ysis account with userName accountReference [$($actionContext.References.Account)]"
+        Write-Information "Deleting Ysis account with userName accountReference [$($actionContext.References.Account)]"
         $splatParams = @{
-            Uri     = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
+            Uri     = "$($actionContext.Configuration.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
             Headers = $headers
             Method  = 'DELETE'
         }

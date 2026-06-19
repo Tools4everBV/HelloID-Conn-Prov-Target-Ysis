@@ -3,10 +3,6 @@
 # PowerShell V2
 #################################################
 
-# Initialize default values
-$config = $actionContext.Configuration
-$person = $personContext.Person
-
 $disciplineSearchField = "JobTitleId"
 
 # AccountReference must have a value
@@ -14,12 +10,6 @@ $outputContext.AccountReference = $actionContext.References.Account
 
 # Enable TLS1.2
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
-
-# Set debug logging
-switch ($($actionContext.Configuration.isDebug)) {
-    $true { $VerbosePreference = 'Continue' }
-    $false { $VerbosePreference = 'SilentlyContinue' }
-}
 
 function Resolve-YsisError {
     [CmdletBinding()]
@@ -101,11 +91,11 @@ try {
 
     # Requesting authorization token
     $splatRequestToken = @{
-        Uri    = "$($config.BaseUrl)/cas/oauth/token"
+        Uri    = "$($actionContext.Configuration.BaseUrl)/cas/oauth/token"
         Method = 'POST'
         Body   = @{
-            client_id     = $($config.ClientID)
-            client_secret = $($config.ClientSecret)
+            client_id     = $($actionContext.Configuration.ClientID)
+            client_secret = $($actionContext.Configuration.ClientSecret)
             scope         = 'scim'
             grant_type    = 'client_credentials'
         }
@@ -117,10 +107,10 @@ try {
     $headers.Add('Accept', 'application/json; charset=utf-8')
     $headers.Add('Content-Type', 'application/json')
 
-    Write-Verbose "Verifying if Ysis account for [$($person.DisplayName)] exists"
+    Write-Information "Verifying if Ysis account for [$($personContext.Person.DisplayName)] exists"
     try {
         $splatParams = @{
-            Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
+            Uri         = "$($actionContext.Configuration.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
             Headers     = $headers
             ContentType = 'application/scim+json;charset=UTF-8'
         }
@@ -128,10 +118,10 @@ try {
     }
     catch {
         if ($_.Exception.Response.StatusCode -eq 404) {
-            Write-Warning "Ysis account for [$($person.DisplayName)] could not be found by accountreference [$($actionContext.References.Account)] and is possibly deleted. To create or correlate a new account, unmanage the account entitlement and rerun an enforcement"
+            Write-Warning "Ysis account for [$($personContext.Person.DisplayName)] could not be found by accountreference [$($actionContext.References.Account)] and is possibly deleted. To create or correlate a new account, unmanage the account entitlement and rerun an enforcement"
             $outputContext.AuditLogs.Add([PSCustomObject]@{
                     Action  = "UpdateAccount"
-                    Message = "Ysis account for [$($person.DisplayName)] could not be found by accountreference [$($actionContext.References.Account)] and is possibly deleted"
+                    Message = "Ysis account for [$($personContext.Person.DisplayName)] could not be found by accountreference [$($actionContext.References.Account)] and is possibly deleted"
                     IsError = $true
                 })
             throw "AccountNotFound"
@@ -174,9 +164,9 @@ try {
     }
 
     # set dynamic values
-    $mapping = Import-Csv "$($config.MappingFile)" -Delimiter ";" -Encoding Default
+    $mapping = Import-Csv "$($actionContext.Configuration.MappingFile)" -Delimiter ";" -Encoding Default
 
-    Write-Verbose "searching for value $($disciplineSearchValue) in field : $($disciplineSearchField)"
+    Write-Information "searching for value $($disciplineSearchValue) in field : $($disciplineSearchField)"
     $mappedObject = $mapping | Where-Object { $_.$disciplineSearchField -eq $disciplineSearchValue }
     $account.Discipline = $mappedObject.Discipline
 
@@ -288,9 +278,9 @@ try {
     $newProperties = $changedProperties.Where( { $_.SideIndicator -eq '=>' })
 
     if (($newProperties | Measure-Object).Count -ge 1) {
-        Write-Verbose "Updating Ysis account with accountReference: [$($actionContext.References.Account)]"
+        Write-Information "Updating Ysis account with accountReference: [$($actionContext.References.Account)]"
         $splatUpdateUserParams = @{
-            Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
+            Uri         = "$($actionContext.Configuration.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
             Headers     = $headers
             Method      = 'PUT'
             Body        = $ysisaccount | ConvertTo-Json

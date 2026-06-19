@@ -3,17 +3,8 @@
 # PowerShell V2
 ###################################################################
 
-# Initialize default values
-$config = $actionContext.Configuration
-
 # Enable TLS1.2
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
-
-# Set debug logging
-switch ($($actionContext.Configuration.isDebug)) {
-    $true { $VerbosePreference = 'Continue' }
-    $false { $VerbosePreference = 'SilentlyContinue' }
-}
 
 #region functions
 function Resolve-YsisError {
@@ -68,11 +59,11 @@ try {
 
     # Requesting authorization token
     $splatRequestToken = @{
-        Uri    = "$($config.BaseUrl)/cas/oauth/token"
+        Uri    = "$($actionContext.Configuration.BaseUrl)/cas/oauth/token"
         Method = 'POST'
         Body   = @{
-            client_id     = $($config.ClientID)
-            client_secret = $($config.ClientSecret)
+            client_id     = $($actionContext.Configuration.ClientID)
+            client_secret = $($actionContext.Configuration.ClientSecret)
             scope         = 'scim'
             grant_type    = 'client_credentials'
         }
@@ -87,7 +78,7 @@ try {
     Write-Information "Verifying if a Ysis account for [$($personContext.Person.DisplayName)] exists"
     try {
         $splatParams = @{
-            Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
+            Uri         = "$($actionContext.Configuration.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
             Headers     = $headers
             ContentType = 'application/scim+json;charset=UTF-8'
         }
@@ -96,7 +87,7 @@ try {
     catch {
         if ($_.Exception.Response.StatusCode -eq 404) {
             $outputContext.AuditLogs.Add([PSCustomObject]@{
-                    Message = "Unable to revoke permission [$($actionContext.References.Permission.displayName)]. Ysis account for [$($person.DisplayName)] not found. Possibly deleted"
+                    Message = "Unable to revoke permission [$($actionContext.PermissionDisplayName)]. Ysis account for [$($personContext.Person.DisplayName)] not found. Possibly deleted"
                     IsError = $false
                 })
             throw "AccountNotFound"
@@ -105,14 +96,14 @@ try {
     }
 
     # Process
-    Write-Verbose "Pre: all assigned roles ($($responseUser.roles.count)): $($responseUser.roles.displayName -join ", ")"
-    Write-Information "Revoking Ysis entitlement: [$($actionContext.References.Permission.DisplayName)]"
+    Write-Information "Pre: all assigned roles ($($responseUser.roles.count)): $($responseUser.roles.displayName -join ", ")"
+    Write-Information "Revoking Ysis entitlement: [$($actionContext.PermissionDisplayName)]"
 
     if ($responseUser.roles.count -gt 0 -and $actionContext.References.Permission.Reference -in $responseUser.roles.value) {
         [Array]$responseUser.roles = $responseUser.roles | Where-Object { $_.value -notcontains $actionContext.References.Permission.Reference }
 
         $splatParams = @{
-            Uri         = "$($config.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
+            Uri         = "$($actionContext.Configuration.BaseUrl)/gm/api/um/scim/v2/users/$($actionContext.References.Account)"
             Headers     = $headers
             Method      = 'PUT'
             Body        = $responseUser | ConvertTo-Json
@@ -125,15 +116,15 @@ try {
             $null = Invoke-RestMethod @splatParams -Verbose:$false
         }
             
-        Write-Verbose "Post: all assigned roles ($($responseUser.roles.count)): $($responseUser.roles.displayName -join ", ")"
+        Write-Information "Post: all assigned roles ($($responseUser.roles.count)): $($responseUser.roles.displayName -join ", ")"
     }
     else {
-        Write-Warning "Permission [$($actionContext.References.Permission.DisplayName)] is already revoked"
+        Write-Warning "Permission [$($actionContext.PermissionDisplayName)] is already revoked"
     }
 
     $outputContext.Success = $true
     $outputContext.AuditLogs.Add([PSCustomObject]@{
-            Message = "Revoke permission [$($actionContext.References.Permission.DisplayName)] from account with Ysis Initials [$($responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)] was successful"
+            Message = "Revoke permission [$($actionContext.PermissionDisplayName)] from account with Ysis Initials [$($responseUser.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)] was successful"
             IsError = $false
         })
 }
@@ -146,11 +137,11 @@ catch {
         if ($($ex.Exception.GetType().FullName -eq 'Microsoft.PowerShell.Commands.HttpResponseException') -or
             $($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {
             $errorObj = Resolve-YsisError -ErrorObject $ex
-            $auditMessage = "Could not revoke Ysis permission [$($actionContext.References.Permission.DisplayName)]. Error: $($errorObj.FriendlyMessage)"
+            $auditMessage = "Could not revoke Ysis permission [$($actionContext.PermissionDisplayName)]. Error: $($errorObj.FriendlyMessage)"
             Write-Warning "Error at Line '$($errorObj.ScriptLineNumber)': $($errorObj.Line). Error: $($errorObj.ErrorDetails)"
         }
         else {
-            $auditMessage = "Could not revoke Ysis permission [$($actionContext.References.Permission.DisplayName)]. Error: $($_.Exception.Message)"
+            $auditMessage = "Could not revoke Ysis permission [$($actionContext.PermissionDisplayName)]. Error: $($_.Exception.Message)"
             Write-Warning "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
         }
         $outputContext.AuditLogs.Add([PSCustomObject]@{
