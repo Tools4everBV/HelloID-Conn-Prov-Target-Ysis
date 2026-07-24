@@ -57,25 +57,25 @@ try {
     # Create account object from mapped data and set the correct account reference
     $account = $actionContext.Data
 
-    if(-not($account.PSObject.Properties.Name -Contains 'Discipline')){
+    if (-not($account.PSObject.Properties.Name -Contains 'Discipline')) {
         $account | Add-Member -NotePropertyName 'Discipline' -NotePropertyValue $null -Force
     }
-    if(-not($account.PSObject.Properties.Name -Contains 'AgbCode')){
+    if (-not($account.PSObject.Properties.Name -Contains 'AgbCode')) {
         $account | Add-Member -NotePropertyName 'AgbCode' -NotePropertyValue $null -Force
     }
-    if(-not($account.PSObject.Properties.Name -Contains 'BigNumber')){
+    if (-not($account.PSObject.Properties.Name -Contains 'BigNumber')) {
         $account | Add-Member -NotePropertyName 'BigNumber' -NotePropertyValue $null -Force
     }
-    if(-not($account.PSObject.Properties.Name -Contains 'WorkPhone')){
+    if (-not($account.PSObject.Properties.Name -Contains 'WorkPhone')) {
         $account | Add-Member -NotePropertyName 'WorkPhone' -NotePropertyValue $null -Force
     }
-    if(-not($account.PSObject.Properties.Name -Contains 'MobilePhone')){
+    if (-not($account.PSObject.Properties.Name -Contains 'MobilePhone')) {
         $account | Add-Member -NotePropertyName 'MobilePhone' -NotePropertyValue $null -Force
     }
-    if(-not($account.PSObject.Properties.Name -Contains 'exportTimelineEvents')){
+    if (-not($account.PSObject.Properties.Name -Contains 'exportTimelineEvents')) {
         $account | Add-Member -NotePropertyName 'exportTimelineEvents' -NotePropertyValue $null -Force
     }
-    if(-not($account.PSObject.Properties.Name -Contains 'YsisInitials')){
+    if (-not($account.PSObject.Properties.Name -Contains 'YsisInitials')) {
         $account | Add-Member -NotePropertyName 'YsisInitials' -NotePropertyValue $null -Force
     }
 
@@ -91,15 +91,17 @@ try {
 
     # Requesting authorization token
     $splatRequestToken = @{
-        Uri    = "$($actionContext.Configuration.BaseUrl)/cas/oauth/token"
+        Uri    = "$($actionContext.Configuration.AuthUrl)/oauth/token"
         Method = 'POST'
         Body   = @{
             client_id     = $($actionContext.Configuration.ClientID)
             client_secret = $($actionContext.Configuration.ClientSecret)
             scope         = 'scim'
             grant_type    = 'client_credentials'
+            audience      = 'gerimedica-ext'
         }
     }
+
     $responseAccessToken = Invoke-RestMethod @splatRequestToken -Verbose:$false
 
     $headers = [System.Collections.Generic.Dictionary[string, string]]::new()

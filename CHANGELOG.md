@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com), and this project adheres to [Semantic Versioning](https://semver.org).
 
+## [3.0.0] - 24-07-2026
+
+### Changed
+- New SCIM Authentication Method
+
 ## [2.1.0] - 09-06-2026
 
 ### Added

@@ -48,59 +48,45 @@ function Resolve-YsisError {
         Write-Output $httpErrorObj
     }
 }
-
-function Get-AccountRoles {
-    [cmdletbinding()]
-    Param ()
-    try {
-        Write-Information 'Adding Authorization headers'
-        $headers = [System.Collections.Generic.Dictionary[string, string]]::new()
-        $headers.Add('Authorization', "Bearer $($responseAccessToken.access_token)")
-        $headers.Add('Accept', 'application/json; charset=utf-8')
-        $headers.Add('Content-Type', 'application/json')
-
-        # Get Role
-        $splatRoleParams = @{
-            Uri         = "$($actionContext.Configuration.BaseUrl)/gm/api/um/scim/v2/roles"
-            Method      = 'GET'
-            Headers     = $headers
-            ContentType = 'application/json'
-        }
-        $roles = Invoke-RestMethod @splatRoleParams -Verbose:$true
-
-    }
-    catch {
-        Write-Warning "$($_)"
-        throw "Failed retrieving roles - $($_)"
-    }
-
-    return $roles
-}
 #endregion functions
 
 try {
     # Requesting authorization token
     $splatRequestToken = @{
-        Uri    = "$($actionContext.Configuration.BaseUrl)/cas/oauth/token"
+        Uri    = "$($actionContext.Configuration.AuthUrl)/oauth/token"
         Method = 'POST'
         Body   = @{
             client_id     = $($actionContext.Configuration.ClientID)
             client_secret = $($actionContext.Configuration.ClientSecret)
             scope         = 'scim'
             grant_type    = 'client_credentials'
+            audience      = 'gerimedica-ext'
         }
     }
 
     $responseAccessToken = Invoke-RestMethod @splatRequestToken -Verbose:$false
 
-    $roles = Get-AccountRoles | Sort-Object -Property displayName
+    $headers = [System.Collections.Generic.Dictionary[string, string]]::new()
+    $headers.Add('Authorization', "Bearer $($responseAccessToken.access_token)")
+    $headers.Add('Accept', 'application/json; charset=utf-8')
+    $headers.Add('Content-Type', 'application/json')
+
+    # Get Role
+    $splatRoleParams = @{
+        Uri         = "$($actionContext.Configuration.BaseUrl)/gm/api/um/scim/v2/roles"
+        Method      = 'GET'
+        Headers     = $headers
+        ContentType = 'application/json'
+    }
+    $roles = Invoke-RestMethod @splatRoleParams -Verbose:$true
+    $roles = $roles | Sort-Object -Property displayName
 
     foreach ($r in $roles ) {
         $outputContext.Permissions.Add(
             @{
                 DisplayName    = "Role: $($r.displayName)"
                 Identification = @{
-                    Reference   = $r.value
+                    Reference = $r.value
                 }
             }
         )

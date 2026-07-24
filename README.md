@@ -1,5 +1,9 @@
 # HelloID-Conn-Prov-Target-Ysis
 
+> [!WARNING]
+> **Version 3.0.0 introduces a breaking change in the authentication method with Ysis.**  
+> The authentication is migrated from CAS to Auth0.
+
 > [!IMPORTANT]
 > This repository contains the connector and configuration code only. The implementer is responsible to acquire the connection details such as username, password, certificate, etc. You might even need to sign a contract or agreement with the supplier before implementing this connector. Please contact the client's application manager to coordinate the connector requirements.
 
@@ -88,13 +92,14 @@ https://raw.githubusercontent.com/Tools4everBV/HelloID-Conn-Prov-Target-Ysis/ref
 
 The following settings are required to connect to the API.
 
-| Setting                | Description                                                                   |
-| ---------------------- | ----------------------------------------------------------------------------- |
-| ClientID               | The ClientId to connect to the Ysis API                                       |
-| ClientSecret           | The ClientSecret to connect to the Ysis API                                   |
-| BaseUrl                | The URL to the Ysis environment. Example: https://company.acceptatie2.ysis.nl |
-| MappingFile            | The mapping between function and discipline                                   |
-| UpdateUsernameOnDelete | Update username to the YsisIntials when archiving Ysis account                |
+| Setting                | Description                                                                               |
+| ---------------------- | ----------------------------------------------------------------------------------------- |
+| ClientID               | The ClientId to connect to the Ysis API                                                   |
+| ClientSecret           | The ClientSecret to connect to the Ysis API                                               |
+| BaseUrl                | The URL to the Ysis environment. Example: https://company.acceptatie2.ysis.nl             |
+| AuthUrl                | The authentication URL to the Ysis environment. Example: https://auth.acceptatie1.ysis.nl |
+| MappingFile            | The mapping between function and discipline                                               |
+| UpdateUsernameOnDelete | Update username to the YsisIntials when archiving Ysis account                            |
 
 ### Correlation configuration
 
