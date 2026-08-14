@@ -360,7 +360,7 @@ try {
                 $errorObj = Resolve-YsisError -ErrorObject $ex
                 Write-Information "$Iterator : $($_.Exception.Response.StatusCode) - $($errorObj.FriendlyMessage)"
 
-                if ($_.Exception.Response.StatusCode -eq 'Conflict' -and $($errorObj.FriendlyMessage) -match "A user with the 'ysisInitials'") {
+                if ($_.Exception.Response.StatusCode -eq 'Conflict' -and $($errorObj.FriendlyMessage) -match "type: uniqueness") {
                     $Iterator++
                     Write-Warning "Ysis-Initials in use, trying with [$($ysisAccount.'urn:ietf:params:scim:schemas:extension:ysis:2.0:User'.ysisInitials)]"
                 }
