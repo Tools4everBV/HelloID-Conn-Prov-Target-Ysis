@@ -3,6 +3,7 @@
 > [!WARNING]
 > **Version 3.0.0 introduces a breaking change in the authentication method with Ysis.**  
 > The authentication is migrated from CAS to Auth0.
+> For migration steps please follow the [migration guide](./MIGRATION.md).
 
 > [!IMPORTANT]
 > This repository contains the connector and configuration code only. The implementer is responsible to acquire the connection details such as username, password, certificate, etc. You might even need to sign a contract or agreement with the supplier before implementing this connector. Please contact the client's application manager to coordinate the connector requirements.
