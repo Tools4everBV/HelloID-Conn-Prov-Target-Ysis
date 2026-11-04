@@ -32,6 +32,17 @@
     }
   },
   {
+    "key": "AuthUrl",
+    "type": "input",
+    "defaultValue": "https://auth.acceptatie1.ysis.nl",
+    "templateOptions": {
+      "placeholder": "https://auth.acceptatie1.ysis.nl",
+      "label": "AuthUrl",
+      "description": "The URL to the Ysis authentication service.",
+      "required": true
+    }
+  },
+  {
     "key": "MappingFile",
     "type": "input",
     "defaultValue": "",

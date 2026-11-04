@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com), and this project adheres to [Semantic Versioning](https://semver.org).
 
+## [3.0.0] - 24-07-2026
+
+> [!WARNING]
+> **Version 3.0.0 introduces a breaking change in the authentication method with Ysis.**  
+> The authentication is migrated from CAS to Auth0.
+
+### Changed
+- New SCIM Authentication Method
+
 ## [2.1.1] - 14-08-2026
 
 ### Fixed

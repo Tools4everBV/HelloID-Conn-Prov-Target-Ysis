@@ -10,17 +10,19 @@ try {
     Write-Information 'Starting target permission import'
 
     $splatRequestToken = @{
-        Uri    = "$($actionContext.Configuration.BaseUrl)/cas/oauth/token"
+        Uri    = "$($actionContext.Configuration.AuthUrl)/oauth/token"
         Method = 'POST'
         Body   = @{
             client_id     = $($actionContext.Configuration.ClientID)
             client_secret = $($actionContext.Configuration.ClientSecret)
             scope         = 'scim'
             grant_type    = 'client_credentials'
+            audience      = 'gerimedica-ext'
         }
     }
 
     $responseAccessToken = Invoke-RestMethod @splatRequestToken -Verbose:$false
+    
     $headers = [System.Collections.Generic.Dictionary[string, string]]::new()
     $headers.Add('Authorization', "Bearer $($responseAccessToken.access_token)")
     $headers.Add('Accept', 'application/json; charset=utf-8')
