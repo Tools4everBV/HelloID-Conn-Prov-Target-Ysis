@@ -11,6 +11,12 @@ All notable changes to this project will be documented in this file. The format 
 ### Changed
 - New SCIM Authentication Method
 
+## [2.1.1] - 14-08-2026
+
+### Fixed
+
+- Updated uniqueness error detection in create to match on SCIM `scimType` instead of specific error message text
+
 ## [2.1.0] - 09-06-2026
 
 ### Added
